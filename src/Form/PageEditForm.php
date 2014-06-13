@@ -9,7 +9,17 @@ namespace Drupal\page_manager\Form;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Component\Utility\String;
+use Drupal\Core\Entity\Entity;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\TypedData\EntityDataDefinition;
+use Drupal\Core\Entity\TypedData\EntityDataDefinitionInterface;
+use Drupal\Core\Plugin\Context\Context;
+use Drupal\Core\TypedData\ComplexDataDefinitionInterface;
+use Drupal\Core\TypedData\ComplexDataInterface;
+use Drupal\Core\TypedData\DataReferenceDefinitionInterface;
+use Drupal\Core\TypedData\ListDataDefinition;
+use Drupal\Core\TypedData\ListDataDefinitionInterface;
 use Drupal\Core\Url;
 
 /**
@@ -42,6 +52,79 @@ class PageEditForm extends PageFormBase {
         'button-action',
       )
     ));
+
+    $form['context'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Available context'),
+      '#open' => TRUE,
+    );
+
+    $form['context']['available_context'] = array(
+      '#type' => 'table',
+      '#header' => array(
+        $this->t('Label'),
+        $this->t('Name'),
+        $this->t('Type'),
+      ),
+      '#empty' => $this->t('There is no available context.'),
+    );
+    $references = array();
+    $contexts = $this->entity->getContexts();
+    foreach ($contexts as $name => $context) {
+      $context_definition = $context->getContextDefinition();
+      $form['context']['available_context']['#rows'][] = array(
+        $context_definition['label'],
+        $name,
+        $context_definition['type'],
+      );
+
+      if (strpos($context_definition['type'], 'entity:') === 0) {
+        $entity_data_definition = EntityDataDefinition::createFromDataType($context_definition['type']);
+        // Add the bundle manually for entities that have no bundle key,
+        // improve this...
+        if (!\Drupal::entityManager()->getDefinition($entity_data_definition->getEntityTypeId())->hasKey('bundle')) {
+          $entity_data_definition->setBundles(array($entity_data_definition->getEntityTypeId()));
+        }
+        foreach ($entity_data_definition->getPropertyDefinitions() as $field => $field_definition) {
+          if ($field_definition instanceof ListDataDefinitionInterface) {
+            $field_item_definition =$field_definition->getItemDefinition();
+            if ($field_item_definition instanceof ComplexDataDefinitionInterface) {
+              foreach ($field_item_definition->getPropertyDefinitions() as $property => $property_definition) {
+                if ($property_definition instanceof DataReferenceDefinitionInterface) {
+                  if ($property_definition->getTargetDefinition() instanceof EntityDataDefinitionInterface) {
+                    $target_definition = $property_definition->getTargetDefinition();
+                    // Ignore references that were already added.
+                    if (isset($contexts[$name . '.' . $field . '.' . $property])) {
+                      continue;
+                    }
+                    $label = String::format('@context_label > @field > @property (@type)', array(
+                      '@context_label' => $context_definition['label'],
+                      '@field' => $field_definition->getLabel(),
+                      '@property' => $property_definition->getLabel(),
+                      '@type' => $target_definition->getDataType(),
+                    ));
+                    $references[$name . '.' . $field . '.' . $property . '.' . $target_definition->getDataType()] = $label;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      $form['context']['references'] = array(
+        '#type' => 'select',
+        '#title' => $this->t('References'),
+        '#options' => $references,
+      );
+
+      $form['context']['add_reference'] = array(
+        '#type' => 'submit',
+        '#value' => $this->t('Add context'),
+        '#submit' => array(array($this, 'addContextReference')),
+      );
+
+    }
 
     $form['page_variant_section'] = array(
       '#type' => 'details',
@@ -214,6 +297,16 @@ class PageEditForm extends PageFormBase {
     parent::save($form, $form_state);
     drupal_set_message($this->t('The %label page has been updated.', array('%label' => $this->entity->label())));
     $form_state['redirect_route'] = new Url('page_manager.page_list');
+  }
+
+  /**
+   * Form submit callback to add a context reference.
+   */
+  public function addContextReference(array $form, array &$form_state) {
+    $references = (array) $this->entity->get('references');
+    $references[] = $form_state['values']['references'];
+    $this->entity->set('references', $references);
+    $this->entity->save();
   }
 
   /**

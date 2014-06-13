@@ -9,6 +9,10 @@ services:
     arguments: ['@router.route_provider', '@request_stack']
     tags:
       - { name: 'event_subscriber' }
+  page_manager.context_references:
+    class: Drupal\page_manager\EventSubscriber\ReferencesContext
+    tags:
+      - { name: 'event_subscriber' }
   page_manager.page_manager_routes:
     class: Drupal\page_manager\Routing\PageManagerRoutes
     arguments: ['@entity.manager']

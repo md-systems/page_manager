@@ -110,6 +110,8 @@ class Page extends ConfigEntityBase implements PageInterface {
    */
   protected $use_admin_theme;
 
+  protected $references = array();
+
   /**
    * Stores a reference to the executable version of this page.
    *
@@ -143,6 +145,7 @@ class Page extends ConfigEntityBase implements PageInterface {
       'access_conditions',
       'access_logic',
       'use_admin_theme',
+      'references',
     );
     foreach ($names as $name) {
       $properties[$name] = $this->get($name);
