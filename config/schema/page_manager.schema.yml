@@ -42,21 +42,21 @@ page_manager.page.*:
       type: sequence
       label: Static context list
       sequence:
-        -  type: mapping
-           label: 'Static context'
-           mapping:
-             name:
-               type: string
-               label: 'Machine-readable name of the context'
-             label:
-               type: label
-               label: 'Label of the context'
-             type:
-               type: string
-               label: 'Context type'
-             value:
-               type: string
-               label: 'Context value'
+        - type: mapping
+          label: 'Static context'
+          mapping:
+            name:
+             type: string
+             label: 'Machine-readable name of the context'
+            label:
+             type: label
+             label: 'Label of the context'
+            type:
+             type: string
+             label: 'Context type'
+            value:
+             type: string
+             label: 'Context value'
     dependencies:
       type: config_dependencies
       label: 'Dependencies'
