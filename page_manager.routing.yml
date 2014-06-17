@@ -181,3 +181,10 @@ page_manager.selection_condition_delete:
     _title: 'Delete selection condition'
   requirements:
     _entity_access: page.update
+
+page_manager.autocomplete_entity:
+  path: '/page_manager/autocomplete/{entity_type_id}'
+  defaults:
+    _controller: '\Drupal\page_manager\Controller\AutocompleteController::autocompleteEntity'
+  requirements:
+    _permission: 'administer pages'

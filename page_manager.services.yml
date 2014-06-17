@@ -9,6 +9,10 @@ services:
     arguments: ['@router.route_provider', '@request_stack']
     tags:
       - { name: 'event_subscriber' }
+  page_manager.static_context:
+    class: Drupal\page_manager\EventSubscriber\StaticContext
+    tags:
+      - { name: 'event_subscriber' }
   page_manager.page_manager_routes:
     class: Drupal\page_manager\Routing\PageManagerRoutes
     arguments: ['@entity.manager']
