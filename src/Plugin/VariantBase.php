@@ -348,6 +348,8 @@ abstract class VariantBase extends PluginBase implements VariantInterface {
   protected function getContextAsTokenData() {
     $data = array();
     foreach ($this->executable->getContexts() as $context) {
+      // @todo Simplify this when token and typed data types are unified in
+      //   https://drupal.org/node/2163027.
       if (strpos($context->getContextDefinition()['type'], 'entity:') === 0) {
         $token_type = substr($context->getContextDefinition()['type'], 7);
         if ($token_type == 'taxonomy_term') {

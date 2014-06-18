@@ -86,7 +86,6 @@ class PageManagerAdminTest extends WebTestBase {
     $this->drupalPostForm(NULL, array('display_variant[status_code]' => 200), 'Update display variant');
     $this->drupalGet('admin/foo');
     $this->assertResponse(200);
-    $this->assertTitle('Foo | Drupal');
     $this->drupalGet('admin/structure/page_manager/manage/foo');
     $this->clickLink('Edit');
     $this->drupalPostForm(NULL, array('display_variant[status_code]' => 403), 'Update display variant');
@@ -125,8 +124,10 @@ class PageManagerAdminTest extends WebTestBase {
     // Add a new display variant.
     $this->clickLink('Add new display variant');
     $this->clickLink('Block page');
+    $this->assertFieldByName("display_variant[page_title]", 'Foo', 'Default page title "Foo" was taken from page label.');
     $edit = array(
       'display_variant[label]' => 'First',
+      'display_variant[page_title]' => 'Example title',
     );
     $this->drupalPostForm(NULL, $edit, 'Add display variant');
     $this->assertRaw(String::format('The %label display variant has been added.', array('%label' => 'First')));
@@ -153,6 +154,7 @@ class PageManagerAdminTest extends WebTestBase {
     // Test that the block is displayed.
     $this->drupalGet('admin/foo');
     $this->assertResponse(200);
+    $this->assertTitle('Example title | Drupal');
     $elements = $this->xpath('//div[@class="block-region-top"]/div/ul[@class="menu"]/li/a');
     $expected = array('My account', 'Log out');
     $links = array();

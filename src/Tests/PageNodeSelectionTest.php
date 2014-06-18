@@ -109,7 +109,6 @@ class PageNodeSelectionTest extends WebTestBase {
     // variant.
     $this->drupalGet('node/' . $node1->id());
     $this->assertResponse(404);
-    $this->assertNoText('Node View');
     $this->assertNoText($node1->label());
 
     $this->drupalGet('node/' . $node2->id());

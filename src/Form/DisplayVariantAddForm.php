@@ -79,7 +79,9 @@ class DisplayVariantAddForm extends DisplayVariantFormBase {
    */
   protected function prepareDisplayVariant($display_variant_id) {
     // Create a new display variant instance.
-    return $this->variantManager->createInstance($display_variant_id);
+    $variant = $this->variantManager->createInstance($display_variant_id);
+    $variant->init($this->page->getExecutable());
+    return $variant;
   }
 
 }

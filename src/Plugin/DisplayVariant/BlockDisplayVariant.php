@@ -114,9 +114,7 @@ class BlockDisplayVariant extends VariantBase implements ContainerFactoryPluginI
         }
       }
     }
-    if (!empty($this->configuration['page_title'])) {
-      $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
-    }
+    $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
     return $build;
   }
 
@@ -134,6 +132,22 @@ class BlockDisplayVariant extends VariantBase implements ContainerFactoryPluginI
    */
   public function buildConfigurationForm(array $form, array &$form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
+
+    // Allow to configure the page title, even when adding a new display.
+    // Default to the page label in that case.
+    $form['page_title'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Page title'),
+      '#description' => $this->t('Configure the page title that will be used for this display.'),
+      '#default_value' => !$this->id() ? $this->executable->getPage()->label() : $this->configuration['page_title'],
+    );
+
+    if (\Drupal::moduleHandler()->moduleExists('token')) {
+      $form['token_tree'] = array(
+        '#theme' => 'token_tree',
+        '#token_types' => array_keys($this->getContextAsTokenData()),
+      );
+    }
 
     // Do not allow blocks to be added until the display variant has been saved.
     if (!$this->id()) {
@@ -158,21 +172,6 @@ class BlockDisplayVariant extends VariantBase implements ContainerFactoryPluginI
         'button-action',
       ),
     ));
-
-    $form['page_title'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Page title'),
-      '#description' => $this->t('When set, overrides the page title.'),
-      '#default_value' => $this->configuration['page_title'],
-    );
-
-    if (\Drupal::moduleHandler()->moduleExists('token')) {
-      $form['token_tree'] = array(
-        '#theme' => 'token_tree',
-        '#token_types' => array_keys($this->getContextAsTokenData()),
-      );
-    }
-
 
     if ($block_assignments = $this->getRegionAssignments()) {
       // Build a table of all blocks used by this display variant.
