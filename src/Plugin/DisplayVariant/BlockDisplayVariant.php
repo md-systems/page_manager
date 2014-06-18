@@ -114,7 +114,19 @@ class BlockDisplayVariant extends VariantBase implements ContainerFactoryPluginI
         }
       }
     }
+    if (!empty($this->configuration['page_title'])) {
+      $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
+    }
     return $build;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultConfiguration() {
+    $configuration = parent::defaultConfiguration();
+    $configuration['page_title'] = '';
+    return $configuration;
   }
 
   /**
@@ -146,6 +158,21 @@ class BlockDisplayVariant extends VariantBase implements ContainerFactoryPluginI
         'button-action',
       ),
     ));
+
+    $form['page_title'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Page title'),
+      '#description' => $this->t('When set, overrides the page title.'),
+      '#default_value' => $this->configuration['page_title'],
+    );
+
+    if (\Drupal::moduleHandler()->moduleExists('token')) {
+      $form['token_tree'] = array(
+        '#theme' => 'token_tree',
+        '#token_types' => array_keys($this->getContextAsTokenData()),
+      );
+    }
+
 
     if ($block_assignments = $this->getRegionAssignments()) {
       // Build a table of all blocks used by this display variant.
@@ -297,6 +324,10 @@ class BlockDisplayVariant extends VariantBase implements ContainerFactoryPluginI
    */
   public function submitConfigurationForm(array &$form, array &$form_state) {
     parent::submitConfigurationForm($form, $form_state);
+
+    if (!empty($form_state['values']['page_title'])) {
+      $this->configuration['page_title'] = $form_state['values']['page_title'];
+    }
 
     // If the blocks were rearranged, update their values.
     if (!empty($form_state['values']['blocks'])) {

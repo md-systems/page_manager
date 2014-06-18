@@ -326,6 +326,40 @@ abstract class VariantBase extends PluginBase implements VariantInterface {
   }
 
   /**
+   * Renders the page title and replaces tokens.
+   *
+   * @param string $page_title
+   *   The page title that should be rendered.
+   *
+   * @return string
+   *   The page title after replacing any tokens.
+   */
+  protected function renderPageTitle($page_title) {
+    $data = $this->getContextAsTokenData();
+    return \Drupal::token()->replace($page_title, $data);
+  }
+
+  /**
+   * Returns available context as token data.
+   *
+   * @return array
+   *   An array with token data values keyed by token type.
+   */
+  protected function getContextAsTokenData() {
+    $data = array();
+    foreach ($this->executable->getContexts() as $context) {
+      if (strpos($context->getContextDefinition()['type'], 'entity:') === 0) {
+        $token_type = substr($context->getContextDefinition()['type'], 7);
+        if ($token_type == 'taxonomy_term') {
+          $token_type = 'term';
+        }
+        $data[$token_type] = $context->getContextValue();
+      }
+    }
+    return $data;
+  }
+
+  /**
    * Returns the UUID generator.
    *
    * @return \Drupal\Component\Uuid\UuidInterface

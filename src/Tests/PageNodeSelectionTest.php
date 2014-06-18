@@ -51,9 +51,11 @@ class PageNodeSelectionTest extends WebTestBase {
     $this->drupalGet('node/' . $node1->id());
     $this->assertResponse(200);
     $this->assertText($node1->label());
+    $this->assertTitle($node1->label() . ' | Drupal');
     $this->drupalGet('node/' . $node2->id());
     $this->assertResponse(200);
     $this->assertText($node2->label());
+    $this->assertTitle($node2->label() . ' | Drupal');
 
     // Create a new page entity to take over node pages.
     $edit = array(
@@ -85,6 +87,7 @@ class PageNodeSelectionTest extends WebTestBase {
     $edit = array(
       'region' => 'top',
       'context_mapping[entity]' => 'node',
+      'settings[label_display]' => FALSE,
     );
     $this->drupalPostForm(NULL, $edit, 'Add block');
 
@@ -96,7 +99,14 @@ class PageNodeSelectionTest extends WebTestBase {
     );
     $this->drupalPostForm(NULL, $edit, 'Add selection condition');
 
-    // The page node will 404, but the article node will display the display variant.
+    // Set the page title to the node title.
+    $edit = array(
+      'display_variant[page_title]' => '[node:title]',
+    );
+    $this->drupalPostForm(NULL, $edit, 'Update display variant');
+
+    // The page node will 404, but the article node will display the display
+    // variant.
     $this->drupalGet('node/' . $node1->id());
     $this->assertResponse(404);
     $this->assertNoText('Node View');
@@ -104,8 +114,9 @@ class PageNodeSelectionTest extends WebTestBase {
 
     $this->drupalGet('node/' . $node2->id());
     $this->assertResponse(200);
-    $this->assertText('Node View');
-    $this->assertText($node2->label());
+    $this->assertTitle($node2->label() . ' | Drupal');
+    $this->assertText($node2->body->value);
+
   }
 
 }

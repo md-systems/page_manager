@@ -83,6 +83,10 @@ page_manager.block_plugin.*:
 page_manager.display_variant.block_page:
   type: page_manager.display_variant
   label: 'Block display variant'
+  mapping:
+    page_title:
+      type: label
+      label: 'Page title'
 
 page_manager.display_variant.http_status_code:
   type: page_manager.display_variant
