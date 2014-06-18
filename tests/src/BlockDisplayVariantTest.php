@@ -94,9 +94,10 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->method('applyContextMapping')
       ->with($block2, array());
     $account = $this->getMock('Drupal\Core\Session\AccountInterface');
+    $page_title = 'Page title';
     $display_variant = $this->getMockBuilder('Drupal\page_manager\Plugin\DisplayVariant\BlockDisplayVariant')
-      ->setConstructorArgs(array(array(), 'test', array(), $context_handler, $account))
-      ->setMethods(array('getBlockBag', 'drupalHtmlClass'))
+      ->setConstructorArgs(array(array('page_title' => $page_title), 'test', array(), $context_handler, $account))
+      ->setMethods(array('getBlockBag', 'drupalHtmlClass', 'renderPageTitle'))
       ->getMock();
     $display_variant->expects($this->exactly(2))
       ->method('drupalHtmlClass')
@@ -104,6 +105,10 @@ class BlockDisplayVariantTest extends UnitTestCase {
     $display_variant->expects($this->once())
       ->method('getBlockBag')
       ->will($this->returnValue($block_bag));
+    $display_variant->expects($this->once())
+      ->method('renderPageTitle')
+      ->with($page_title)
+      ->will($this->returnValue($page_title));
 
     $expected_render = array(
       'top' => array(
@@ -115,6 +120,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
           '#suffix' => '</div>',
         ),
       ),
+      '#title' => 'Page title',
     );
     $this->assertSame($expected_render, $display_variant->render());
   }
