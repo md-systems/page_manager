@@ -8,6 +8,7 @@
 namespace Drupal\page_manager\Plugin\DisplayVariant;
 
 use Drupal\Component\Plugin\ContextAwarePluginInterface;
+use Drupal\Component\Plugin\DerivativeInspectionInterface;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Uuid\UuidInterface;
@@ -134,6 +135,11 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
             '#weight' => $weight++,
             '#configuration' => $block->getConfiguration(),
             '#plugin_id' => $block->getPluginId(),
+            // @todo BlockPluginInterface should extend from
+            //   DerivativeInspectionInterface in
+            //   https://www.drupal.org/node/1875996.
+            '#base_plugin_id' => $block instanceof DerivativeInspectionInterface ? $block->getBasePluginId() : $block->getPluginId(),
+            '#derivative_plugin_id' => $block instanceof DerivativeInspectionInterface ? $block->getDerivativeId() : $block->getPluginId(),
           );
           $block_render_array['#configuration']['label'] = String::checkPlain($block_render_array['#configuration']['label']);
           $block_render_array['content'] = $block->build();

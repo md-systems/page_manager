@@ -52,6 +52,7 @@ class PageManagerAdminTest extends WebTestBase {
     $this->doTestDisablePage();
     $this->doTestAddDisplayVariant();
     $this->doTestAddBlock();
+    $this->doTestEditBlock();
     $this->doTestEditDisplayVariant();
     $this->doTestReorderDisplayVariants();
     $this->doTestAddPageWithDuplicatePath();
@@ -153,20 +154,40 @@ class PageManagerAdminTest extends WebTestBase {
     // Test that the block is displayed.
     $this->drupalGet('admin/foo');
     $this->assertResponse(200);
-    $elements = $this->xpath('//div[@class="block-region-top"]/div/ul[@class="menu"]/li/a');
+    $elements = $this->xpath('//div[@class="block-region-top"]/div/div/ul[@class="menu"]/li/a');
     $expected = array('My account', 'Log out');
     $links = array();
     foreach ($elements as $element) {
       $links[] = (string) $element;
     }
     $this->assertEqual($expected, $links);
+    // Check the block label.
+    $this->assertRaw('<h2>User account menu</h2>');
+  }
+
+  /**
+   * Tests editing a block.
+   */
+  protected function doTestEditBlock() {
+    $this->drupalGet('admin/structure/page_manager/manage/foo');
+    $this->clickLink('Edit');
+    $this->clickLink('Edit');
+    $edit = array(
+      'settings[label]' => 'Updated block label',
+    );
+    $this->drupalPostForm(NULL, $edit, 'Update block');
+    // Test that the block is displayed.
+    $this->drupalGet('admin/foo');
+    $this->assertResponse(200);
+    // Check the block label.
+    $this->assertRaw('<h2>' . $edit['settings[label]'] . '</h2>');
   }
 
   /**
    * Tests editing a display variant.
    */
   protected function doTestEditDisplayVariant() {
-    if (!$block = $this->findBlockByLabel('foo', 'First', 'User account menu')) {
+    if (!$block = $this->findBlockByLabel('foo', 'First', 'Updated block label')) {
       $this->fail('Block not found');
       return;
     }
@@ -197,7 +218,7 @@ class PageManagerAdminTest extends WebTestBase {
   protected function doTestReorderDisplayVariants() {
     $this->drupalGet('admin/foo');
     $this->assertResponse(200);
-    $elements = $this->xpath('//div[@class="block-region-bottom"]/div/ul[@class="menu"]/li/a');
+    $elements = $this->xpath('//div[@class="block-region-bottom"]/div/div/ul[@class="menu"]/li/a');
     $expected = array('My account', 'Log out');
     $links = array();
     foreach ($elements as $element) {
@@ -267,7 +288,7 @@ class PageManagerAdminTest extends WebTestBase {
     // Assert that the block is displayed.
     $this->drupalGet('admin/foo');
     $this->assertResponse(200);
-    $elements = $this->xpath('//div[@class="block-region-bottom"]/div/ul[@class="menu"]/li/a');
+    $elements = $this->xpath('//div[@class="block-region-bottom"]/div/div/ul[@class="menu"]/li/a');
     $expected = array('My account', 'Log out');
     $links = array();
     foreach ($elements as $element) {
@@ -278,9 +299,9 @@ class PageManagerAdminTest extends WebTestBase {
     $this->drupalGet('admin/structure/page_manager/manage/foo');
     $this->clickLink('Edit');
     $this->clickLink('Delete');
-    $this->assertRaw(String::format('Are you sure you want to delete the block %label?', array('%label' => 'User account menu')));
+    $this->assertRaw(String::format('Are you sure you want to delete the block %label?', array('%label' => 'Updated block label')));
     $this->drupalPostForm(NULL, array(), 'Delete');
-    $this->assertRaw(String::format('The block %label has been removed.', array('%label' => 'User account menu')));
+    $this->assertRaw(String::format('The block %label has been removed.', array('%label' => 'Updated block label')));
 
     // Assert that the block is now gone.
     $this->drupalGet('admin/foo');

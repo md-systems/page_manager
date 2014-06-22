@@ -118,7 +118,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
           '#attributes' => array(),
           '#weight' => 0,
           '#configuration' => array(
-            'label' => 'Block labelgq'
+            'label' => 'Block label'
           ),
           '#plugin_id' => null,
           'content' => array(
