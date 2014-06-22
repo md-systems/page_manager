@@ -122,6 +122,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       $build[$region]['#suffix'] = '</div>';
 
       /** @var $blocks \Drupal\block\BlockPluginInterface[] */
+      $weight = 0;
       foreach ($blocks as $block_id => $block) {
         if ($block instanceof ContextAwarePluginInterface) {
           $this->contextHandler()->applyContextMapping($block, $contexts);
@@ -130,11 +131,9 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
           $block_render_array = array(
             '#theme' => 'block',
             '#attributes' => array(),
-            //'#weight' => $entity->get('weight'),
+            '#weight' => $weight++,
             '#configuration' => $block->getConfiguration(),
             '#plugin_id' => $block->getPluginId(),
-            '#base_plugin_id' => $block->getBasePluginId(),
-            '#derivative_plugin_id' => $block->getDerivativeId(),
           );
           $block_render_array['#configuration']['label'] = String::checkPlain($block_render_array['#configuration']['label']);
           $block_render_array['content'] = $block->build();

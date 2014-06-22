@@ -70,6 +70,9 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->will($this->returnValue(array(
         '#markup' => 'block1_build_value',
       )));
+    $block1->expects($this->once())
+      ->method('getConfiguration')
+      ->will($this->returnValue(array('label' => 'Block label')));
     $block2 = $this->getMock('Drupal\page_manager\Tests\TestContextAwareBlockPluginInterface');
     $block2->expects($this->once())
       ->method('access')
@@ -99,7 +102,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->setConstructorArgs(array(array(), 'test', array(), $context_handler, $account, $uuid_generator))
       ->setMethods(array('getBlockBag', 'drupalHtmlClass'))
       ->getMock();
-    $display_variant->expects($this->exactly(2))
+    $display_variant->expects($this->exactly(1))
       ->method('drupalHtmlClass')
       ->will($this->returnArgument(0));
     $display_variant->expects($this->once())
@@ -111,9 +114,16 @@ class BlockDisplayVariantTest extends UnitTestCase {
         '#prefix' => '<div class="block-region-top">',
         '#suffix' => '</div>',
         'block1' => array(
-          '#markup' => 'block1_build_value',
-          '#prefix' => '<div class="block-block1">',
-          '#suffix' => '</div>',
+          '#theme' => 'block',
+          '#attributes' => array(),
+          '#weight' => 0,
+          '#configuration' => array(
+            'label' => 'Block labelgq'
+          ),
+          '#plugin_id' => null,
+          'content' => array(
+            '#markup' => 'block1_build_value',
+          ),
         ),
       ),
     );
