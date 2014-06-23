@@ -73,6 +73,9 @@ class BlockDisplayVariantTest extends UnitTestCase {
     $block1->expects($this->once())
       ->method('getConfiguration')
       ->will($this->returnValue(array('label' => 'Block label')));
+    $block1->expects($this->exactly(3))
+      ->method('getPluginId')
+      ->will($this->returnValue('block_plugin_id'));
     $block2 = $this->getMock('Drupal\page_manager\Tests\TestContextAwareBlockPluginInterface');
     $block2->expects($this->once())
       ->method('access')
@@ -120,7 +123,9 @@ class BlockDisplayVariantTest extends UnitTestCase {
           '#configuration' => array(
             'label' => 'Block label'
           ),
-          '#plugin_id' => null,
+          '#plugin_id' => 'block_plugin_id',
+          '#base_plugin_id' => 'block_plugin_id',
+          '#derivative_plugin_id' => 'block_plugin_id',
           'content' => array(
             '#markup' => 'block1_build_value',
           ),
