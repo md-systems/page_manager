@@ -54,7 +54,7 @@ class DisplayVariantDeleteBlockForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return new Url('page_manager.display_variant_edit', array(
       'page' => $this->page->id(),
       'display_variant_id' => $this->displayVariant->id()
@@ -86,7 +86,7 @@ class DisplayVariantDeleteBlockForm extends ConfirmFormBase {
     $this->page->save();
     drupal_set_message($this->t('The block %label has been removed.', array('%label' => $this->block->label())));
 
-    $form_state['redirect_route'] = $this->getCancelRoute();
+    $form_state['redirect_route'] = $this->getCancelUrl();
   }
 
 }

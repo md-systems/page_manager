@@ -54,7 +54,7 @@ class SelectionConditionDeleteForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return new Url('page_manager.display_variant_edit', array(
       'page' => $this->page->id(),
       'display_variant_id' => $this->displayVariant->id(),
@@ -85,7 +85,7 @@ class SelectionConditionDeleteForm extends ConfirmFormBase {
     $this->displayVariant->removeSelectionCondition($this->selectionCondition->getConfiguration()['uuid']);
     $this->page->save();
     drupal_set_message($this->t('The selection condition %name has been removed.', array('%name' => $this->selectionCondition->getPluginDefinition()['label'])));
-    $form_state['redirect_route'] = $this->getCancelRoute();
+    $form_state['redirect_route'] = $this->getCancelUrl();
   }
 
 }

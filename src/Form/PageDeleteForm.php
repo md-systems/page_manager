@@ -25,7 +25,7 @@ class PageDeleteForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return new Url('page_manager.page_list');
   }
 
@@ -42,7 +42,7 @@ class PageDeleteForm extends EntityConfirmFormBase {
   public function submit(array $form, array &$form_state) {
     $this->entity->delete();
     drupal_set_message($this->t('The page %name has been removed.', array('%name' => $this->entity->label())));
-    $form_state['redirect_route'] = $this->getCancelRoute();
+    $form_state['redirect_route'] = $this->getCancelUrl();
   }
 
 }
