@@ -38,11 +38,11 @@ class PageConfigSchemaTest extends KernelTestBase {
    * Tests whether the page entity config schema is valid.
    */
   function testValidPageConfigSchema() {
-    $id = strtolower($this->randomName());
+    $id = strtolower($this->randomMachineName());
     /** @var $page \Drupal\page_manager\PageInterface */
     $page = Page::create(array(
       'id' => $id,
-      'label' => $this->randomName(),
+      'label' => $this->randomMachineName(),
       'path' => '/node/{node}',
     ));
 
