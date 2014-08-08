@@ -74,7 +74,7 @@ class AccessConditionDeleteForm extends ConfirmFormBase {
     $this->page->removeAccessCondition($this->accessCondition->getConfiguration()['uuid']);
     $this->page->save();
     drupal_set_message($this->t('The access condition %name has been removed.', array('%name' => $this->accessCondition->getPluginDefinition()['label'])));
-    $form_state['redirect_route'] = $this->getCancelUrl();
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

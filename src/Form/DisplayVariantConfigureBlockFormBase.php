@@ -129,7 +129,7 @@ abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
     $this->displayVariant->updateBlock($this->block->getConfiguration()['uuid'], array('region' => $form_state['values']['region']));
     $this->page->save();
 
-    $form_state['redirect_route'] = new Url('page_manager.display_variant_edit', array(
+    $form_state->setRedirect('page_manager.display_variant_edit', array(
       'page' => $this->page->id(),
       'display_variant_id' => $this->displayVariant->id(),
     ));

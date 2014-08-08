@@ -87,7 +87,7 @@ class DisplayVariantDeleteBlockForm extends ConfirmFormBase {
     $this->page->save();
     drupal_set_message($this->t('The block %label has been removed.', array('%label' => $this->block->label())));
 
-    $form_state['redirect_route'] = $this->getCancelUrl();
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

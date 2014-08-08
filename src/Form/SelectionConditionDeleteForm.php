@@ -86,7 +86,7 @@ class SelectionConditionDeleteForm extends ConfirmFormBase {
     $this->displayVariant->removeSelectionCondition($this->selectionCondition->getConfiguration()['uuid']);
     $this->page->save();
     drupal_set_message($this->t('The selection condition %name has been removed.', array('%name' => $this->selectionCondition->getPluginDefinition()['label'])));
-    $form_state['redirect_route'] = $this->getCancelUrl();
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

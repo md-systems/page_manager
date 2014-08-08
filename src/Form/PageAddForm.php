@@ -21,7 +21,7 @@ class PageAddForm extends PageFormBase {
   public function save(array $form, FormStateInterface $form_state) {
     parent::save($form, $form_state);
     drupal_set_message($this->t('The %label page has been added.', array('%label' => $this->entity->label())));
-    $form_state['redirect_route'] = new Url('page_manager.page_edit', array(
+    $form_state->setRedirectUrl('page_manager.page_edit', array(
       'page' => $this->entity->id(),
     ));
   }

@@ -69,7 +69,7 @@ class DisplayVariantAddForm extends DisplayVariantFormBase {
     // Save the page entity.
     $this->page->save();
     drupal_set_message($this->t('The %label display variant has been added.', array('%label' => $this->displayVariant->label())));
-    $form_state['redirect_route'] = new Url('page_manager.display_variant_edit', array(
+    $form_state->setRedirect('page_manager.display_variant_edit', array(
       'page' => $this->page->id(),
       'display_variant_id' => $display_variant_id,
     ));

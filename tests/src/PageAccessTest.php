@@ -33,7 +33,7 @@ class PageAccessTest extends UnitTestCase {
   protected $entityType;
 
   /**
-   * @var \Drupal\Core\Entity\EntityAccessControllerInterface
+   * @var \Drupal\Core\Entity\EntityAccessControlHandlerInterface
    */
   protected $pageAccess;
 

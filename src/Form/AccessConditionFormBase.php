@@ -29,7 +29,7 @@ abstract class AccessConditionFormBase extends ConditionFormBase {
     // Save the page entity.
     $this->page->save();
 
-    $form_state['redirect_route'] = $this->page->urlInfo('edit-form');
+    $form_state->setRedirectUrl($this->page->urlInfo('edit-form'));
   }
 
 }

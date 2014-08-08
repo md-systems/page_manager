@@ -74,7 +74,7 @@ class DisplayVariantDeleteForm extends ConfirmFormBase {
     $this->page->removeVariant($this->displayVariant->id());
     $this->page->save();
     drupal_set_message($this->t('The display variant %name has been removed.', array('%name' => $this->displayVariant->label())));
-    $form_state['redirect_route'] = $this->getCancelUrl();
+    $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
 }

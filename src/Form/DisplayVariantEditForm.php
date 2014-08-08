@@ -146,7 +146,7 @@ class DisplayVariantEditForm extends DisplayVariantFormBase {
     // Save the page entity.
     $this->page->save();
     drupal_set_message($this->t('The %label display variant has been updated.', array('%label' => $this->displayVariant->label())));
-    $form_state['redirect_route'] = $this->page->urlInfo('edit-form');
+    $form_state->setRedirectUrl($this->page->urlInfo('edit-form'));
   }
 
   /**
