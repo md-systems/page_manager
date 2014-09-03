@@ -115,9 +115,6 @@ class PageManagerRoutesTest extends UnitTestCase {
       ->method('getPath')
       ->will($this->returnValue('/page1'));
     $page1->expects($this->once())
-      ->method('label')
-      ->will($this->returnValue('Page label'));
-    $page1->expects($this->once())
       ->method('usesAdminTheme')
       ->will($this->returnValue(TRUE));
     $pages['page1'] = $page1;
@@ -143,7 +140,6 @@ class PageManagerRoutesTest extends UnitTestCase {
     $expected_defaults = array(
       '_entity_view' => 'page_manager_page',
       'page_manager_page' => 'page1',
-      '_title' => 'Page label',
     );
     $expected_requirements = array(
       '_entity_access' => 'page_manager_page.view',
@@ -192,7 +188,6 @@ class PageManagerRoutesTest extends UnitTestCase {
     $expected_defaults = array(
       '_entity_view' => 'page_manager_page',
       'page_manager_page' => 'page1',
-      '_title' => NULL,
     );
     $expected_requirements = array(
       '_entity_access' => 'page_manager_page.view',

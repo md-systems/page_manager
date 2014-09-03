@@ -108,9 +108,13 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->with($block2, array());
     $account = $this->getMock('Drupal\Core\Session\AccountInterface');
     $uuid_generator = $this->getMock('Drupal\Component\Uuid\UuidInterface');
+    $page_title = 'Page title';
+    $token = $this->getMockBuilder('Drupal\Core\Utility\Token')
+      ->disableOriginalConstructor()
+      ->getMock();
     $display_variant = $this->getMockBuilder('Drupal\page_manager\Plugin\DisplayVariant\BlockDisplayVariant')
-      ->setConstructorArgs(array(array(), 'test', array(), $context_handler, $account, $uuid_generator))
-      ->setMethods(array('getBlockBag', 'drupalHtmlClass'))
+      ->setConstructorArgs(array(array('page_title' => $page_title), 'test', array(), $context_handler, $account, $uuid_generator, $token))
+      ->setMethods(array('getBlockBag', 'drupalHtmlClass', 'renderPageTitle'))
       ->getMock();
     $display_variant->expects($this->exactly(1))
       ->method('drupalHtmlClass')
@@ -118,6 +122,10 @@ class BlockDisplayVariantTest extends UnitTestCase {
     $display_variant->expects($this->once())
       ->method('getBlockBag')
       ->will($this->returnValue($block_bag));
+    $display_variant->expects($this->once())
+      ->method('renderPageTitle')
+      ->with($page_title)
+      ->will($this->returnValue($page_title));
 
     $expected_build = array(
       'top' => array(
@@ -138,6 +146,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
           ),
         ),
       ),
+      '#title' => 'Page title',
     );
     $this->assertSame($expected_build, $display_variant->build());
   }

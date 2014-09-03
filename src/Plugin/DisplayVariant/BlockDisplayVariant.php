@@ -17,6 +17,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Utility\Token;
 use Drupal\page_manager\PageExecutable;
 use Drupal\page_manager\Plugin\BlockVariantInterface;
 use Drupal\page_manager\Plugin\BlockVariantTrait;
@@ -70,6 +71,12 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
   protected $executable;
 
   /**
+   * The token service.
+   *
+   * @var \Drupal\Core\Utility\Token
+   */
+
+  /**
    * Constructs a new BlockDisplayVariant.
    *
    * @param array $configuration
@@ -84,13 +91,16 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    *   The current user.
    * @param \Drupal\Component\Uuid\UuidInterface $uuid_generator
    *   The UUID generator.
+   * @param \Drupal\Core\Utility\Token
+   *   The token service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, ContextHandlerInterface $context_handler, AccountInterface $account, UuidInterface $uuid_generator) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, ContextHandlerInterface $context_handler, AccountInterface $account, UuidInterface $uuid_generator, Token $token) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->contextHandler = $context_handler;
     $this->account = $account;
     $this->uuidGenerator = $uuid_generator;
+    $this->token = $token;
   }
 
   /**
@@ -103,7 +113,8 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       $plugin_definition,
       $container->get('context.handler'),
       $container->get('current_user'),
-      $container->get('uuid')
+      $container->get('uuid'),
+      $container->get('token')
     );
   }
 
@@ -145,6 +156,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         }
       }
     }
+    $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
     return $build;
   }
 
@@ -153,6 +165,15 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
+
+    // Allow to configure the page title, even when adding a new display.
+    // Default to the page label in that case.
+    $form['page_title'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Page title'),
+      '#description' => $this->t('Configure the page title that will be used for this display.'),
+      '#default_value' => !$this->id() ? $this->executable->getPage()->label() : $this->configuration['page_title'],
+    );
 
     // Do not allow blocks to be added until the display variant has been saved.
     if (!$this->id()) {
@@ -329,6 +350,10 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     parent::submitConfigurationForm($form, $form_state);
 
+    if (!empty($form_state['values']['page_title'])) {
+      $this->configuration['page_title'] = $form_state['values']['page_title'];
+    }
+
     // If the blocks were rearranged, update their values.
     if (!$form_state->isValueEmpty('blocks')) {
       foreach ($form_state->getValue('blocks') as $block_id => $block_values) {
@@ -362,6 +387,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       'blocks' => array(),
       'selection_conditions' => array(),
       'selection_logic' => 'and',
+      'page_title' => '',
     );
   }
 
@@ -393,6 +419,42 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    */
   public function getSelectionLogic() {
     return $this->configuration['selection_logic'];
+  }
+
+  /**
+   * Renders the page title and replaces tokens.
+   *
+   * @param string $page_title
+   *   The page title that should be rendered.
+   *
+   * @return string
+   *   The page title after replacing any tokens.
+   */
+  protected function renderPageTitle($page_title) {
+    $data = $this->getContextAsTokenData();
+    return $this->token->replace($page_title, $data);
+  }
+
+  /**
+   * Returns available context as token data.
+   *
+   * @return array
+   *   An array with token data values keyed by token type.
+   */
+  protected function getContextAsTokenData() {
+    $data = array();
+    foreach ($this->executable->getContexts() as $context) {
+      // @todo Simplify this when token and typed data types are unified in
+      //   https://drupal.org/node/2163027.
+      if (strpos($context->getContextDefinition()->getDataType(), 'entity:') === 0) {
+        $token_type = substr($context->getContextDefinition()->getDataType(), 7);
+        if ($token_type == 'taxonomy_term') {
+          $token_type = 'term';
+        }
+        $data[$token_type] = $context->getContextValue();
+      }
+    }
+    return $data;
   }
 
   /**

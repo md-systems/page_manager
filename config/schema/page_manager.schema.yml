@@ -67,6 +67,9 @@ display_variant.plugin.block_page:
       label: 'Blocks'
       sequence:
         - type: page_manager.block_plugin.[id]
+    page_title:
+      type: label
+      label: 'Page title'
 
 display_variant.plugin.http_status_code:
   type: display_variant.plugin
