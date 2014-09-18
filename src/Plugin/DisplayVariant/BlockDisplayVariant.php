@@ -350,8 +350,8 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     parent::submitConfigurationForm($form, $form_state);
 
-    if (!empty($form_state['values']['page_title'])) {
-      $this->configuration['page_title'] = $form_state['values']['page_title'];
+    if ($form_state->hasValue('page_title')) {
+      $this->configuration['page_title'] = $form_state->getValue('page_title');
     }
 
     // If the blocks were rearranged, update their values.
