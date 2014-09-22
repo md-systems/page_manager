@@ -11,6 +11,7 @@ use Drupal\Component\Plugin\ContextAwarePluginInterface;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Uuid\UuidInterface;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Display\VariantBase;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormStateInterface;
@@ -112,6 +113,12 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    */
   public function build() {
     $build = array();
+
+    // Default the max page expire to permanent.
+    $max_page_expire = Cache::PERMANENT;
+
+    $page = $this->executable->getPage();
+
     $contexts = $this->getContexts();
     foreach ($this->getRegionAssignments() as $region => $blocks) {
       if (!$blocks) {
@@ -128,22 +135,125 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         if ($block instanceof ContextAwarePluginInterface) {
           $this->contextHandler()->applyContextMapping($block, $contexts);
         }
-        if ($block->access($this->account)) {
-          $block_render_array = array(
-            '#theme' => 'block',
-            '#attributes' => array(),
-            '#weight' => $weight++,
-            '#configuration' => $block->getConfiguration(),
-            '#plugin_id' => $block->getPluginId(),
-            '#base_plugin_id' => $block->getBaseId(),
-            '#derivative_plugin_id' => $block->getDerivativeId(),
-          );
-          $block_render_array['#configuration']['label'] = String::checkPlain($block_render_array['#configuration']['label']);
-          $block_render_array['content'] = $block->build();
+        if (!$block->access($this->account)->isAllowed()) {
+          continue;
+        }
 
-          $build[$region][$block_id] = $block_render_array;
+        $block_render_array = array(
+          '#theme' => 'block',
+          '#attributes' => array(),
+          '#weight' => $weight++,
+          '#configuration' => $block->getConfiguration(),
+          '#plugin_id' => $block->getPluginId(),
+          '#base_plugin_id' => $block->getBaseId(),
+          '#derivative_plugin_id' => $block->getDerivativeId(),
+          '#block' => $block,
+          '#cache' => array(),
+          '#contextual_links' => array(),
+        );
+        $block_render_array['#cache']['tags'] = NestedArray::mergeDeepArray(array(
+          $page->getCacheTag(), // Page plugin cache tags.
+          $block->getCacheTags(), // Block plugin cache tag.
+        ));
+        $block_render_array['#configuration']['label'] = String::checkPlain($block_render_array['#configuration']['label']);
+        $build[$region][$block_id] = $block_render_array;
+
+        if ($block->isCacheable()) {
+          $build[$region][$block_id]['#pre_render'][] = array($this, 'buildBlock');
+          // Generic cache keys, with the block plugin's custom keys appended
+          // (usually cache context keys like 'cache_context.user.roles').
+          $default_cache_keys = array(
+            'page_manager_page',
+            $page->id(),
+            'block',
+            $block_id,
+            \Drupal::languageManager()->getCurrentLanguage()->getId(),
+            // Blocks are always rendered in a "per theme" cache context.
+            'cache_context.theme',
+          );
+          $max_block_page = $block->getCacheMaxAge();
+          $build[$region][$block_id]['#cache'] += array(
+            'keys' => array_merge($default_cache_keys, $block->getCacheKeys()),
+            'bin' => $block->getCacheBin(),
+            'expire' => ($max_block_page === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_block_page,
+          );
+
+          // Maintain the max page expire time if it is not currently NULL
+          // (disabled), set it to max block expire if that is not permanent and
+          // lower than the current max page expire or that is PERMANENT.
+          if ($max_page_expire !== NULL && $max_block_page != Cache::PERMANENT && ($max_page_expire == Cache::PERMANENT || $max_block_page < $max_page_expire)) {
+            $max_page_expire = $max_block_page;
+          }
+        }
+        else {
+          // Disable render caching of the whole page.
+          $max_page_expire = NULL;
+          $build[$region][$block_id] = $this->buildBlock($build[$region][$block_id]);
         }
       }
+    }
+
+    // Set up render cache on the page level.
+    if ($max_page_expire !== NULL) {
+      $build['#cache'] = array(
+        'keys' => array(
+          'page-manager-page',
+          $this->executable->getPage()->id(),
+          \Drupal::languageManager()->getCurrentLanguage()->getId(),
+          // Blocks are always rendered in a "per theme" cache context.
+          'cache_context.theme',
+        ),
+        'tags' => $page->getCacheTag(),
+        'expire' => ($max_page_expire === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_page_expire,
+      );
+    }
+
+    return $build;
+  }
+
+  /**
+   * #pre_render callback for building a block.
+   *
+   * Renders the content using the provided block plugin, and then:
+   * - if there is no content, aborts rendering, and makes sure the block won't
+   *   be rendered.
+   * - if there is content, moves the contextual links from the block content to
+   *   the block itself.
+   */
+  public function buildBlock($build) {
+    $content = $build['#block']->build();
+    // Remove the block plugin from the render array.
+    unset($build['#block']);
+    if (!empty($content)) {
+      // Place the $content returned by the block plugin into a 'content' child
+      // element, as a way to allow the plugin to have complete control of its
+      // properties and rendering (e.g., its own #theme) without conflicting
+      // with the properties used above, or alternate ones used by alternate
+      // block rendering approaches in contrib (e.g., Panels). However, the use
+      // of a child element is an implementation detail of this particular block
+      // rendering approach. Semantically, the content returned by the plugin
+      // "is the" block, and in particular, #attributes and #contextual_links is
+      // information about the *entire* block. Therefore, we must move these
+      // properties from $content and merge them into the top-level element.
+      foreach (array('#attributes', '#contextual_links') as $property) {
+        if (isset($content[$property])) {
+          var_dump($property);
+          var_dump($build[$property]);
+          $build[$property] += $content[$property];
+          unset($content[$property]);
+        }
+      }
+      $build['content'] = $content;
+    }
+    else {
+      // Abort rendering: render as the empty string and ensure this block is
+      // render cached, so we can avoid the work of having to repeatedly
+      // determine whether the block is empty. E.g. modifying or adding entities
+      // could cause the block to no longer be empty.
+      $build = array(
+        '#markup' => '',
+        '#cache' => $build['#cache'],
+      );
     }
     return $build;
   }
