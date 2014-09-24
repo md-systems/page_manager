@@ -117,7 +117,19 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
     // Default the max page expire to permanent.
     $max_page_expire = Cache::PERMANENT;
 
+    // Set default page cache keys that includes the page and display.
+    $page_cache_keys = array(
+      'page-manager-page',
+      // The page ID.
+      $this->executable->getPage()->id(),
+      // The UUID of this display.
+      // @todo should have an API for this?
+      $this->configuration['uuid'],
+      \Drupal::languageManager()->getCurrentLanguage()->getId(),
+    );
+
     $page = $this->executable->getPage();
+
 
     $contexts = $this->getContexts();
     foreach ($this->getRegionAssignments() as $region => $blocks) {
@@ -178,6 +190,9 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
             'expire' => ($max_block_page === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_block_page,
           );
 
+          // Also include the block ID and cache keys in the page cache keys.
+          $page_cache_keys = array_merge($page_cache_keys, array($block_id), $block->getCacheKeys());
+
           // Maintain the max page expire time if it is not currently NULL
           // (disabled), set it to max block expire if that is not permanent and
           // lower than the current max page expire or that is PERMANENT.
@@ -196,13 +211,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
     // Set up render cache on the page level.
     if ($max_page_expire !== NULL) {
       $build['#cache'] = array(
-        'keys' => array(
-          'page-manager-page',
-          $this->executable->getPage()->id(),
-          \Drupal::languageManager()->getCurrentLanguage()->getId(),
-          // Blocks are always rendered in a "per theme" cache context.
-          'cache_context.theme',
-        ),
+        'keys' => array_unique($page_cache_keys),
         'tags' => $page->getCacheTag(),
         'expire' => ($max_page_expire === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_page_expire,
       );
