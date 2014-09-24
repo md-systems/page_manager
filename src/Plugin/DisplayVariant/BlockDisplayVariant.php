@@ -225,24 +225,6 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
     // Remove the block plugin from the render array.
     unset($build['#block']);
     if (!empty($content)) {
-      // Place the $content returned by the block plugin into a 'content' child
-      // element, as a way to allow the plugin to have complete control of its
-      // properties and rendering (e.g., its own #theme) without conflicting
-      // with the properties used above, or alternate ones used by alternate
-      // block rendering approaches in contrib (e.g., Panels). However, the use
-      // of a child element is an implementation detail of this particular block
-      // rendering approach. Semantically, the content returned by the plugin
-      // "is the" block, and in particular, #attributes and #contextual_links is
-      // information about the *entire* block. Therefore, we must move these
-      // properties from $content and merge them into the top-level element.
-      foreach (array('#attributes', '#contextual_links') as $property) {
-        if (isset($content[$property])) {
-          var_dump($property);
-          var_dump($build[$property]);
-          $build[$property] += $content[$property];
-          unset($content[$property]);
-        }
-      }
       $build['content'] = $content;
     }
     else {
