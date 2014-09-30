@@ -186,7 +186,6 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
           $max_block_page = $block->getCacheMaxAge();
           $build[$region][$block_id]['#cache'] += array(
             'keys' => array_merge($default_cache_keys, $block->getCacheKeys()),
-            'bin' => $block->getCacheBin(),
             'expire' => ($max_block_page === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_block_page,
           );
 
