@@ -8,7 +8,7 @@
 namespace Drupal\Tests\page_manager\Unit;
 
 use Drupal\Component\Uuid\UuidInterface;
-use Drupal\page_manager\Plugin\BlockPluginBag;
+use Drupal\page_manager\Plugin\BlockPluginCollection;
 use Drupal\page_manager\Plugin\BlockVariantTrait;
 use Drupal\Tests\UnitTestCase;
 
@@ -41,15 +41,15 @@ class BlockVariantTraitTest extends UnitTestCase {
    * @dataProvider providerTestGetRegionAssignments
    */
   public function testGetRegionAssignments($expected, $blocks = array()) {
-    $block_bag = $this->getMockBuilder('Drupal\page_manager\Plugin\BlockPluginBag')
+    $block_collection = $this->getMockBuilder('Drupal\page_manager\Plugin\BlockPluginCollection')
       ->disableOriginalConstructor()
       ->getMock();
-    $block_bag->expects($this->once())
+    $block_collection->expects($this->once())
       ->method('getAllByRegion')
       ->will($this->returnValue($blocks));
 
     $display_variant = new TestBlockVariantTrait();
-    $display_variant->setBlockPluginBag($block_bag);
+    $display_variant->setBlockPluginCollection($block_collection);
 
     $this->assertSame($expected, $display_variant->getRegionAssignments());
   }
@@ -109,12 +109,12 @@ class TestBlockVariantTrait {
   protected $uuidGenerator;
 
   /**
-   * @param \Drupal\page_manager\Plugin\BlockPluginBag $block_plugin_bag
+   * @param \Drupal\page_manager\Plugin\BlockPluginCollection $block_plugin_collection
    *
    * @return $this
    */
-  public function setBlockPluginBag(BlockPluginBag $block_plugin_bag) {
-    $this->blockPluginBag = $block_plugin_bag;
+  public function setBlockPluginCollection(BlockPluginCollection $block_plugin_collection) {
+    $this->blockPluginCollection = $block_plugin_collection;
     return $this;
   }
 

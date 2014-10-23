@@ -2,17 +2,17 @@
 
 /**
  * @file
- * Contains \Drupal\page_manager\Plugin\VariantBag.
+ * Contains \Drupal\page_manager\Plugin\VariantCollection.
  */
 
 namespace Drupal\page_manager\Plugin;
 
-use Drupal\Core\Plugin\DefaultPluginBag;
+use Drupal\Core\Plugin\DefaultLazyPluginCollection;
 
 /**
  * Provides a collection of variants plugins.
  */
-class VariantBag extends DefaultPluginBag {
+class VariantCollection extends DefaultLazyPluginCollection {
 
   /**
    * {@inheritdoc}

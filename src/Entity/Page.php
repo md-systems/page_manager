@@ -8,7 +8,7 @@
 namespace Drupal\page_manager\Entity;
 
 use Drupal\page_manager\PageInterface;
-use Drupal\Core\Condition\ConditionPluginBag;
+use Drupal\Core\Condition\ConditionPluginCollection;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\page_manager\Plugin\VariantAwareTrait;
@@ -91,11 +91,11 @@ class Page extends ConfigEntityBase implements PageInterface {
   protected $access_logic = 'and';
 
   /**
-   * The plugin bag that holds the access conditions.
+   * The plugin collection that holds the access conditions.
    *
-   * @var \Drupal\Component\Plugin\PluginBag
+   * @var \Drupal\Component\Plugin\LazyPluginCollection
    */
-  protected $accessConditionBag;
+  protected $accessConditionCollection;
 
   /**
    * Indicates if this page should be displayed in the admin theme.
@@ -227,7 +227,7 @@ class Page extends ConfigEntityBase implements PageInterface {
   /**
    * {@inheritdoc}
    */
-  public function getPluginBags() {
+  public function getPluginCollections() {
     return array(
       'display_variants' => $this->getVariants(),
       'access_conditions' => $this->getAccessConditions(),
@@ -238,10 +238,10 @@ class Page extends ConfigEntityBase implements PageInterface {
    * {@inheritdoc}
    */
   public function getAccessConditions() {
-    if (!$this->accessConditionBag) {
-      $this->accessConditionBag = new ConditionPluginBag(\Drupal::service('plugin.manager.condition'), $this->get('access_conditions'));
+    if (!$this->accessConditionCollection) {
+      $this->accessConditionCollection = new ConditionPluginCollection(\Drupal::service('plugin.manager.condition'), $this->get('access_conditions'));
     }
-    return $this->accessConditionBag;
+    return $this->accessConditionCollection;
   }
 
   /**

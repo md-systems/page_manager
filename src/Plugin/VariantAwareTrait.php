@@ -12,11 +12,11 @@ namespace Drupal\page_manager\Plugin;
 trait VariantAwareTrait {
 
   /**
-   * The plugin bag that holds the variants.
+   * The plugin collection that holds the variants.
    *
-   * @var \Drupal\page_manager\Plugin\VariantBag
+   * @var \Drupal\page_manager\Plugin\VariantCollection
    */
-  protected $variantBag;
+  protected $variantCollection;
 
   /**
    * @see \Drupal\page_manager\Plugin\VariantAwareInterface::addVariant()
@@ -46,11 +46,11 @@ trait VariantAwareTrait {
    * @see \Drupal\page_manager\Plugin\VariantAwareInterface::getVariants()
    */
   public function getVariants() {
-    if (!$this->variantBag) {
-      $this->variantBag = new VariantBag(\Drupal::service('plugin.manager.display_variant'), $this->getVariantConfig());
-      $this->variantBag->sort();
+    if (!$this->variantCollection) {
+      $this->variantCollection = new VariantCollection(\Drupal::service('plugin.manager.display_variant'), $this->getVariantConfig());
+      $this->variantCollection->sort();
     }
-    return $this->variantBag;
+    return $this->variantCollection;
   }
 
   /**

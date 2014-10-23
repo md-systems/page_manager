@@ -2,18 +2,18 @@
 
 /**
  * @file
- * Contains \Drupal\page_manager\Plugin\BlockPluginBag.
+ * Contains \Drupal\page_manager\Plugin\BlockPluginCollection.
  */
 
 namespace Drupal\page_manager\Plugin;
 
 use Drupal\Core\Block\BlockPluginInterface;
-use Drupal\Core\Plugin\DefaultPluginBag;
+use Drupal\Core\Plugin\DefaultLazyPluginCollection;
 
 /**
  * Provides a collection of block plugins.
  */
-class BlockPluginBag extends DefaultPluginBag {
+class BlockPluginCollection extends DefaultLazyPluginCollection {
 
   /**
    * {@inheritdoc}

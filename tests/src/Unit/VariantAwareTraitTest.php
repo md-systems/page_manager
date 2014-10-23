@@ -10,7 +10,7 @@ namespace Drupal\Tests\page_manager\Unit;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\page_manager\Plugin\VariantAwareTrait;
-use Drupal\page_manager\Plugin\VariantBag;
+use Drupal\page_manager\Plugin\VariantCollection;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -59,7 +59,7 @@ class VariantAwareTraitTest extends UnitTestCase {
       ->method('createInstance');
 
     $variants = $trait_object->getVariants();
-    $this->assertInstanceOf('Drupal\page_manager\Plugin\VariantBag', $variants);
+    $this->assertInstanceOf('Drupal\page_manager\Plugin\VariantCollection', $variants);
     $this->assertSame(0, $variants->count());
   }
 
@@ -83,7 +83,7 @@ class VariantAwareTraitTest extends UnitTestCase {
     $trait_object->setVariantConfig($config);
 
     $variants = $trait_object->getVariants();
-    $this->assertInstanceOf('Drupal\page_manager\Plugin\VariantBag', $variants);
+    $this->assertInstanceOf('Drupal\page_manager\Plugin\VariantCollection', $variants);
     $this->assertSame(2, $variants->count());
     return $variants;
   }
@@ -93,7 +93,7 @@ class VariantAwareTraitTest extends UnitTestCase {
    *
    * @depends testGetVariants
    */
-  public function testGetVariantsSort(VariantBag $variants) {
+  public function testGetVariantsSort(VariantCollection $variants) {
     $this->assertSame(array('bar' => 'bar', 'foo' => 'foo'), $variants->getInstanceIds());
   }
 

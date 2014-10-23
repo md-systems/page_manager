@@ -13,11 +13,11 @@ namespace Drupal\page_manager\Plugin;
 trait BlockVariantTrait {
 
   /**
-   * The plugin bag that holds the block plugins.
+   * The plugin collection that holds the block plugins.
    *
-   * @var \Drupal\page_manager\Plugin\BlockPluginBag
+   * @var \Drupal\page_manager\Plugin\BlockPluginCollection
    */
-  protected $blockPluginBag;
+  protected $blockPluginCollection;
 
   /**
    * @see \Drupal\page_manager\Plugin\BlockVariantInterface::getRegionNames()
@@ -33,7 +33,7 @@ trait BlockVariantTrait {
    * @see \Drupal\page_manager\Plugin\BlockVariantInterface::getBlock()
    */
   public function getBlock($block_id) {
-    return $this->getBlockBag()->get($block_id);
+    return $this->getBlockCollection()->get($block_id);
   }
 
   /**
@@ -41,7 +41,7 @@ trait BlockVariantTrait {
    */
   public function addBlock(array $configuration) {
     $configuration['uuid'] = $this->uuidGenerator()->generate();
-    $this->getBlockBag()->addInstanceId($configuration['uuid'], $configuration);
+    $this->getBlockCollection()->addInstanceId($configuration['uuid'], $configuration);
     return $configuration['uuid'];
   }
 
@@ -49,7 +49,7 @@ trait BlockVariantTrait {
    * @see \Drupal\page_manager\Plugin\BlockVariantInterface::removeBlock()
    */
   public function removeBlock($block_id) {
-    $this->getBlockBag()->removeInstanceId($block_id);
+    $this->getBlockCollection()->removeInstanceId($block_id);
     return $this;
   }
 
@@ -58,7 +58,7 @@ trait BlockVariantTrait {
    */
   public function updateBlock($block_id, array $configuration) {
     $existing_configuration = $this->getBlock($block_id)->getConfiguration();
-    $this->getBlockBag()->setInstanceConfiguration($block_id, $configuration + $existing_configuration);
+    $this->getBlockCollection()->setInstanceConfiguration($block_id, $configuration + $existing_configuration);
     return $this;
   }
 
@@ -76,7 +76,7 @@ trait BlockVariantTrait {
   public function getRegionAssignments() {
     // Build an array of the region names in the right order.
     $empty = array_fill_keys(array_keys($this->getRegionNames()), array());
-    $full = $this->getBlockBag()->getAllByRegion();
+    $full = $this->getBlockCollection()->getAllByRegion();
     // Merge it with the actual values to maintain the ordering.
     return array_intersect_key(array_merge($empty, $full), $empty);
   }
@@ -92,14 +92,14 @@ trait BlockVariantTrait {
   /**
    * Returns the block plugins used for this display variant.
    *
-   * @return \Drupal\Core\Block\BlockPluginInterface[]|\Drupal\page_manager\Plugin\BlockPluginBag
-   *   An array or bag of configured block plugins.
+   * @return \Drupal\Core\Block\BlockPluginInterface[]|\Drupal\page_manager\Plugin\BlockPluginCollection
+   *   An array or collection of configured block plugins.
    */
-  protected function getBlockBag() {
-    if (!$this->blockPluginBag) {
-      $this->blockPluginBag = new BlockPluginBag(\Drupal::service('plugin.manager.block'), $this->getBlockConfig());
+  protected function getBlockCollection() {
+    if (!$this->blockPluginCollection) {
+      $this->blockPluginCollection = new BlockPluginCollection(\Drupal::service('plugin.manager.block'), $this->getBlockConfig());
     }
-    return $this->blockPluginBag;
+    return $this->blockPluginCollection;
   }
 
   /**

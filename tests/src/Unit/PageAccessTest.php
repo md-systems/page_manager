@@ -104,7 +104,7 @@ class PageAccessTest extends UnitTestCase {
     $account = $this->getMock('Drupal\Core\Session\AccountInterface');
 
     $page->expects($this->once())
-      ->method('getCacheTag')
+      ->method('getCacheTags')
       ->willReturn(['page:1']);
 
     $this->assertFalse($this->pageAccess->access($page, 'view', NULL, $account));
@@ -131,7 +131,7 @@ class PageAccessTest extends UnitTestCase {
     // Ensure that the cache tag is added for the temporary conditions.
     if ($is_new || $is_fallback) {
       $page->expects($this->once())
-        ->method('getCacheTag')
+        ->method('getCacheTags')
         ->willReturn(['page:1']);
     }
 

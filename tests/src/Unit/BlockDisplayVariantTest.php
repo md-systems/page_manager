@@ -47,7 +47,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
 
     $display_variant = $this->getMockBuilder('Drupal\page_manager\Plugin\DisplayVariant\BlockDisplayVariant')
       ->disableOriginalConstructor()
-      ->setMethods(array('getBlockBag', 'getSelectionConditions'))
+      ->setMethods(array('getBlockCollection', 'getSelectionConditions'))
       ->getMock();
     $display_variant->setConfiguration(array('blocks' => array('foo' => array())));
     $display_variant->expects($this->once())
@@ -95,10 +95,10 @@ class BlockDisplayVariantTest extends UnitTestCase {
         'block2' => $block2,
       ),
     );
-    $block_bag = $this->getMockBuilder('Drupal\page_manager\Plugin\BlockPluginBag')
+    $block_collection = $this->getMockBuilder('Drupal\page_manager\Plugin\BlockPluginCollection')
       ->disableOriginalConstructor()
       ->getMock();
-    $block_bag->expects($this->once())
+    $block_collection->expects($this->once())
       ->method('getAllByRegion')
       ->will($this->returnValue($blocks));
 
@@ -110,14 +110,14 @@ class BlockDisplayVariantTest extends UnitTestCase {
     $uuid_generator = $this->getMock('Drupal\Component\Uuid\UuidInterface');
     $display_variant = $this->getMockBuilder('Drupal\page_manager\Plugin\DisplayVariant\BlockDisplayVariant')
       ->setConstructorArgs(array(array(), 'test', array(), $context_handler, $account, $uuid_generator))
-      ->setMethods(array('getBlockBag', 'drupalHtmlClass'))
+      ->setMethods(array('getBlockCollection', 'drupalHtmlClass'))
       ->getMock();
     $display_variant->expects($this->exactly(1))
       ->method('drupalHtmlClass')
       ->will($this->returnArgument(0));
     $display_variant->expects($this->once())
-      ->method('getBlockBag')
-      ->will($this->returnValue($block_bag));
+      ->method('getBlockCollection')
+      ->will($this->returnValue($block_collection));
 
     $expected_build = array(
       'top' => array(

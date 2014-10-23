@@ -2,30 +2,30 @@
 
 /**
  * @file
- * Contains \Drupal\Tests\page_manager\Unit\BlockPluginBagTest.
+ * Contains \Drupal\Tests\page_manager\Unit\BlockPluginCollectionTest.
  */
 
 namespace Drupal\Tests\page_manager\Unit;
 
-use Drupal\page_manager\Plugin\BlockPluginBag;
+use Drupal\page_manager\Plugin\BlockPluginCollection;
 use Drupal\Tests\UnitTestCase;
 
 /**
- * Tests the block plugin bag.
+ * Tests the block plugin collection.
  *
- * @coversDefaultClass \Drupal\page_manager\Plugin\BlockPluginBag
+ * @coversDefaultClass \Drupal\page_manager\Plugin\BlockPluginCollection
  *
  * @group Drupal
  * @group PageManager
  */
-class BlockPluginBagTest extends UnitTestCase {
+class BlockPluginCollectionTest extends UnitTestCase {
 
   /**
    * {@inheritdoc}
    */
   public static function getInfo() {
     return array(
-      'name' => 'Block plugin bag',
+      'name' => 'Block plugin collection',
       'description' => '',
       'group' => 'Page Manager',
     );
@@ -82,7 +82,7 @@ class BlockPluginBagTest extends UnitTestCase {
       ->method('createInstance')
       ->will($this->returnValueMap($plugin_map));
 
-    $block_plugin_bag = new BlockPluginBag($block_manager, $blocks);
+    $block_plugin_collection = new BlockPluginCollection($block_manager, $blocks);
     $expected = array(
       'bottom' => array(
         'bing' => $plugins['bing'],
@@ -93,7 +93,7 @@ class BlockPluginBagTest extends UnitTestCase {
         'bar' => $plugins['bar'],
       ),
     );
-    $this->assertSame($expected, $block_plugin_bag->getAllByRegion());
+    $this->assertSame($expected, $block_plugin_collection->getAllByRegion());
   }
 
 }

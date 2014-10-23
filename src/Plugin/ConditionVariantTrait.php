@@ -9,7 +9,7 @@ namespace Drupal\page_manager\Plugin;
 
 use Drupal\Component\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Condition\ConditionAccessResolverTrait;
-use Drupal\Core\Condition\ConditionPluginBag;
+use Drupal\Core\Condition\ConditionPluginCollection;
 
 /**
  * Provides methods for \Drupal\page_manager\Plugin\ConditionVariantInterface.
@@ -19,20 +19,20 @@ trait ConditionVariantTrait {
   use ConditionAccessResolverTrait;
 
   /**
-   * The plugin bag that holds the selection condition plugins.
+   * The plugin collection that holds the selection condition plugins.
    *
-   * @var \Drupal\Component\Plugin\PluginBag
+   * @var \Drupal\Component\Plugin\LazyPluginCollection
    */
-  protected $selectionConditionBag;
+  protected $selectionConditionCollection;
 
   /**
    * @see \Drupal\page_manager\Plugin\ConditionVariantInterface::getSelectionConditions()
    */
   public function getSelectionConditions() {
-    if (!$this->selectionConditionBag) {
-      $this->selectionConditionBag = new ConditionPluginBag(\Drupal::service('plugin.manager.condition'), $this->getSelectionConfiguration());
+    if (!$this->selectionConditionCollection) {
+      $this->selectionConditionCollection = new ConditionPluginCollection(\Drupal::service('plugin.manager.condition'), $this->getSelectionConfiguration());
     }
-    return $this->selectionConditionBag;
+    return $this->selectionConditionCollection;
   }
 
   /**
