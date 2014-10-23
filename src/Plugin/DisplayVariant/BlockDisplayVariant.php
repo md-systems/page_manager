@@ -164,7 +164,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
           '#contextual_links' => array(),
         );
         $block_render_array['#cache']['tags'] = NestedArray::mergeDeepArray(array(
-          $page->getCacheTag(), // Page plugin cache tags.
+          $page->getCacheTags(), // Page plugin cache tags.
           $block->getCacheTags(), // Block plugin cache tag.
         ));
         $block_render_array['#configuration']['label'] = String::checkPlain($block_render_array['#configuration']['label']);
@@ -211,7 +211,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
     if ($max_page_expire !== NULL) {
       $build['#cache'] = array(
         'keys' => array_unique($page_cache_keys),
-        'tags' => $page->getCacheTag(),
+        'tags' => $page->getCacheTags(),
         'expire' => ($max_page_expire === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_page_expire,
       );
     }
