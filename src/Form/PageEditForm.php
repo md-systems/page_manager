@@ -10,6 +10,7 @@ namespace Drupal\page_manager\Form;
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
@@ -43,6 +44,84 @@ class PageEditForm extends PageFormBase {
         'button-action',
       ]
     ]);
+
+    $form['context'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Available context'),
+      '#open' => TRUE,
+    ];
+
+    $form['context']['available_context'] = [
+      '#type' => 'table',
+      '#header' => [
+        $this->t('Label'),
+        $this->t('Name'),
+        $this->t('Type'),
+      ],
+      '#empty' => $this->t('There is no available context.'),
+    ];
+    $contexts = $this->entity->getContexts();
+    foreach ($contexts as $name => $context) {
+      $context_definition = $context->getContextDefinition();
+      $form['context']['available_context']['#rows'][] = [
+        $context_definition->getLabel(),
+        $name,
+        $context_definition->getDataType(),
+      ];
+    }
+
+    $form['context']['static'] = [
+      '#type' => 'details',
+      '#title' => t('Add static context'),
+      '#open' => TRUE,
+      '#attached' => [
+        'library' => [
+          'page_manager/drupal.autocomplete_reference_update',
+        ],
+      ],
+      '#attributes' => [
+        'class' => ['autocomplete-reference'],
+      ],
+      '#tree' => TRUE,
+    ];
+    $form['context']['static']['label'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Label'),
+    ];
+    $form['context']['static']['name'] = [
+      '#type' => 'machine_name',
+      '#maxlength' => 64,
+      '#required' => FALSE,
+      '#machine_name' => [
+        'exists' => [$this, 'contextExists'],
+        'source' => ['context', 'static', 'label'],
+      ],
+    ];
+    $form['context']['static']['entity_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Entity type'),
+      '#options' => \Drupal::entityManager()->getEntityTypeLabels(TRUE),
+      '#default_value' => 'node',
+      '#attributes' => [
+        'class' => ['page-manager-autocomplete-reference-update'],
+      ],
+    ];
+
+    $form['context']['static']['selection'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Select entity'),
+      '#autocomplete_route_name' => 'page_manager.autocomplete_entity',
+      '#autocomplete_route_parameters' => [
+        'entity_type_id' => 'node',
+      ],
+    ];
+
+    $form['context']['static']['add_static_context'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Add context'),
+      '#validate' => [[$this, 'validateStaticContext']],
+      '#submit' => [[$this, 'submitStaticContext']],
+    ];
 
     $form['display_variant_section'] = [
       '#type' => 'details',
@@ -202,6 +281,58 @@ class PageEditForm extends PageFormBase {
     parent::save($form, $form_state);
     drupal_set_message($this->t('The %label page has been updated.', ['%label' => $this->entity->label()]));
     $form_state->setRedirect('page_manager.page_list');
+  }
+
+  /**
+   * Determines if a context with that name already exists.
+   *
+   * @param string $name
+   *   The context name
+   *
+   * @return bool
+   *   TRUE if the format exists, FALSE otherwise.
+   */
+  public function contextExists($name) {
+    return isset($this->entity->getContexts()[$name]);
+  }
+
+  public function validateStaticContext(array $form, FormStateInterface $form_state) {
+
+  }
+
+  /**
+   * Form submit callback to add a context reference.
+   */
+  public function submitStaticContext(array $form, FormStateInterface $form_state) {
+    $input = $form_state->getValue(['static', 'selection']);
+
+    // Take "label (entity id)', match the ID from parenthesis when it's a
+    // number.
+    if (preg_match("/.+\((\d+)\)/", $input, $matches)) {
+      $match = $matches[1];
+    }
+    // Match the ID when it's a string (e.g. for config entity types).
+    elseif (preg_match("/.+\(([\w.]+)\)/", $input, $matches)) {
+      $match = $matches[1];
+    }
+
+    if (!isset($match)) {
+      return;
+    }
+
+    $entity_type = $form_state->getValue(['static', 'entity_type']);
+    $entity = \Drupal::entityManager()->getStorage($entity_type)->load($match);
+    $new_static = [
+      'name' => $form_state->getValue(['static', 'name']),
+      'label' => $form_state->getValue(['static', 'label']),
+      'type' => 'entity:' . $entity_type,
+      'value' => $entity->uuid(),
+    ];
+
+    $static_context = (array) $this->entity->get('static_context');
+    $static_context[] = $new_static;
+    $this->entity->set('static_context', $static_context);
+    $this->entity->save();
   }
 
 }

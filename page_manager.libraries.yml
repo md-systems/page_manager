@@ -1,0 +1,8 @@
+drupal.autocomplete_reference_update:
+  version: VERSION
+  js:
+    js/autocomplete-reference-update.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupal.form
