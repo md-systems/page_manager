@@ -7,9 +7,11 @@
 
 namespace Drupal\Tests\page_manager\Unit;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockPluginInterface;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Form\FormState;
+use Drupal\page_manager\PageExecutable;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -53,7 +55,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
     $block1 = $this->getMock('Drupal\Core\Block\BlockPluginInterface');
     $block1->expects($this->once())
       ->method('access')
-      ->will($this->returnValue(TRUE));
+      ->will($this->returnValue(AccessResult::allowed()));
     $block1->expects($this->once())
       ->method('build')
       ->will($this->returnValue([
@@ -74,7 +76,13 @@ class BlockDisplayVariantTest extends UnitTestCase {
     $block2 = $this->getMock('Drupal\Tests\page_manager\Unit\TestContextAwareBlockPluginInterface');
     $block2->expects($this->once())
       ->method('access')
-      ->will($this->returnValue(FALSE));
+      ->will($this->returnValue(AccessResult::forbidden()));
+    $block1->expects($this->atLeastOnce())
+      ->method('getCacheTags')
+      ->willReturn(array('block_plugin:block_plugin_id'));
+    $block2->expects($this->never())
+      ->method('getCacheTags')
+      ->willReturn(array('block_plugin:block_plugin_id'));
     $block2->expects($this->never())
       ->method('build');
     $blocks = [
@@ -90,6 +98,15 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->method('getAllByRegion')
       ->will($this->returnValue($blocks));
 
+    $language = $this->getMock('Drupal\Core\Language\LanguageInterface');
+    $language->expects($this->atLeastOnce())
+      ->method('getId')
+      ->willReturn('en');
+    $language_manager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
+    $language_manager->expects($this->atLeastOnce())
+      ->method('getCurrentLanguage')
+      ->willReturn($language);
+
     $context_handler = $this->getMock('Drupal\Core\Plugin\Context\ContextHandlerInterface');
     $context_handler->expects($this->once())
       ->method('applyContextMapping')
@@ -101,9 +118,20 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
     $display_variant = $this->getMockBuilder('Drupal\page_manager\Plugin\DisplayVariant\BlockDisplayVariant')
-      ->setConstructorArgs([['page_title' => $page_title], 'test', [], $context_handler, $account, $uuid_generator, $token])
-      ->setMethods(['getBlockCollection', 'renderPageTitle'])
+      ->setConstructorArgs([['page_title' => $page_title], 'test', array(), $context_handler, $account, $uuid_generator, $token, $language_manager])
+      ->setMethods(array('getBlockCollection', 'drupalHtmlClass', 'renderPageTitle'))
       ->getMock();
+
+    $page = $this->getMock('\Drupal\page_manager\PageInterface');
+    $page->expects($this->atLeastOnce())
+      ->method('id')
+      ->willReturn('page_id');
+    $page->expects($this->atLeastOnce())
+      ->method('getCacheTags')
+      ->willReturn(array('page:page_id'));
+    $page_executable = new PageExecutable($page);
+    $display_variant->setExecutable($page_executable);
+
     $display_variant->expects($this->once())
       ->method('getBlockCollection')
       ->will($this->returnValue($block_collection));
@@ -113,21 +141,30 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->will($this->returnValue($page_title));
 
     $expected_build = [
-      'top' => [
-        '#prefix' => '<div class="block-region-top">',
-        '#suffix' => '</div>',
-        'block1' => [
-          '#theme' => 'block',
-          '#attributes' => [],
-          '#weight' => 0,
-          '#configuration' => [
-            'label' => 'Block label'
-          ],
-          '#plugin_id' => 'block_plugin_id',
-          '#base_plugin_id' => 'block_base_plugin_id',
-          '#derivative_plugin_id' => 'block_derivative_plugin_id',
-          'content' => [
-            '#markup' => 'block1_build_value',
+      'regions' => [
+        'top' => [
+          '#prefix' => '<div class="block-region-top">',
+          '#suffix' => '</div>',
+          'block1' => [
+            '#theme' => 'block',
+            '#attributes' => [],
+            '#weight' => 0,
+            '#configuration' => [
+              'label' => 'Block label'
+            ],
+            '#plugin_id' => 'block_plugin_id',
+            '#base_plugin_id' => 'block_base_plugin_id',
+            '#derivative_plugin_id' => 'block_derivative_plugin_id',
+            '#cache' => [
+              'tags' => [
+                0 => 'page:page_id',
+                1 => 'block_plugin:block_plugin_id',
+              ],
+            ],
+            '#contextual_links' => [],
+            'content' => [
+              '#markup' => 'block1_build_value',
+            ],
           ],
         ],
       ],
