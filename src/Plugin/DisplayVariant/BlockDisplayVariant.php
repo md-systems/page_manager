@@ -12,8 +12,10 @@ use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\String;
 use Drupal\Component\Uuid\UuidInterface;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Display\VariantBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
@@ -80,6 +82,13 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
   protected $token;
 
   /**
+   * The language manager.
+   *
+   * @var \Drupal\Core\Language\LanguageManagerInterface
+   */
+  protected $languageManager;
+
+  /**
    * Constructs a new BlockDisplayVariant.
    *
    * @param array $configuration
@@ -96,14 +105,17 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    *   The UUID generator.
    * @param \Drupal\Core\Utility\Token $token
    *   The token service.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
+   *   The language manager.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, ContextHandlerInterface $context_handler, AccountInterface $account, UuidInterface $uuid_generator, Token $token) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, ContextHandlerInterface $context_handler, AccountInterface $account, UuidInterface $uuid_generator, Token $token, LanguageManagerInterface $language_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->contextHandler = $context_handler;
     $this->account = $account;
     $this->uuidGenerator = $uuid_generator;
     $this->token = $token;
+    $this->languageManager = $language_manager;
   }
 
   /**
@@ -117,7 +129,8 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       $container->get('context.handler'),
       $container->get('current_user'),
       $container->get('uuid'),
-      $container->get('token')
+      $container->get('token'),
+      $container->get('language_manager')
     );
   }
 
@@ -126,6 +139,23 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    */
   public function build() {
     $build = [];
+
+    // Default the max page expire to permanent.
+    $max_page_expire = Cache::PERMANENT;
+
+    $page = $this->executable->getPage();
+
+    // Set default page cache keys that includes the page and display.
+    $page_cache_keys = [
+      'page-manager-page',
+      // The page ID.
+      $page->id(),
+      // The UUID of this display.
+      // @todo should have an API for this?
+      $this->configuration['uuid'],
+      $this->languageManager->getCurrentLanguage()->getId(),
+    ];
+
     $contexts = $this->getContexts();
     foreach ($this->getRegionAssignments() as $region => $blocks) {
       if (!$blocks) {
@@ -133,8 +163,8 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       }
 
       $region_name = Html::getClass("block-region-$region");
-      $build[$region]['#prefix'] = '<div class="' . $region_name . '">';
-      $build[$region]['#suffix'] = '</div>';
+      $build['regions'][$region]['#prefix'] = '<div class="' . $region_name . '">';
+      $build['regions'][$region]['#suffix'] = '</div>';
 
       /** @var $blocks \Drupal\Core\Block\BlockPluginInterface[] */
       $weight = 0;
@@ -142,26 +172,108 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         if ($block instanceof ContextAwarePluginInterface) {
           $this->contextHandler()->applyContextMapping($block, $contexts);
         }
-        if ($block->access($this->account)) {
-          $block_render_array = [
-            '#theme' => 'block',
-            '#attributes' => [],
-            '#weight' => $weight++,
-            '#configuration' => $block->getConfiguration(),
-            '#plugin_id' => $block->getPluginId(),
-            '#base_plugin_id' => $block->getBaseId(),
-            '#derivative_plugin_id' => $block->getDerivativeId(),
-          ];
-          if (!empty($block_render_array['#configuration']['label'])) {
-            $block_render_array['#configuration']['label'] = String::checkPlain($block_render_array['#configuration']['label']);
-          }
-          $block_render_array['content'] = $block->build();
+        if (!$block->access($this->account)->isAllowed()) {
+          continue;
+        }
 
-          $build[$region][$block_id] = $block_render_array;
+        $block_render_array = [
+          '#theme' => 'block',
+          '#attributes' => array(),
+          '#weight' => $weight++,
+          '#configuration' => $block->getConfiguration(),
+          '#plugin_id' => $block->getPluginId(),
+          '#base_plugin_id' => $block->getBaseId(),
+          '#derivative_plugin_id' => $block->getDerivativeId(),
+          '#block' => $block,
+          '#cache' => array(),
+          '#contextual_links' => array(),
+        ];
+        $block_render_array['#cache']['tags'] = NestedArray::mergeDeepArray(array(
+          $page->getCacheTags(), // Page plugin cache tags.
+          $block->getCacheTags(), // Block plugin cache tag.
+        ));
+        if (!empty($block_render_array['#configuration']['label'])) {
+          $block_render_array['#configuration']['label'] = String::checkPlain($block_render_array['#configuration']['label']);
+        }
+        $build['regions'][$region][$block_id] = $block_render_array;
+
+        if ($block->isCacheable()) {
+          $build['regions'][$region][$block_id]['#pre_render'][] = array($this, 'buildBlock');
+          // Generic cache keys, with the block plugin's custom keys appended
+          // (usually cache context keys like 'cache_context.user.roles').
+          $default_cache_keys = array(
+            'page_manager_page',
+            $page->id(),
+            'block',
+            $block_id,
+            \Drupal::languageManager()->getCurrentLanguage()->getId(),
+            // Blocks are always rendered in a "per theme" cache context.
+            'cache_context.theme',
+          );
+          $max_block_page = $block->getCacheMaxAge();
+          $build['regions'][$region][$block_id]['#cache'] += array(
+            'keys' => array_merge($default_cache_keys, $block->getCacheKeys()),
+            'expire' => ($max_block_page === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_block_page,
+          );
+
+          // Also include the block ID and cache keys in the page cache keys.
+          $page_cache_keys = array_merge($page_cache_keys, array($block_id), $block->getCacheKeys());
+
+          // Maintain the max page expire time if it is not currently NULL
+          // (disabled), set it to max block expire if that is not permanent and
+          // lower than the current max page expire or that is PERMANENT.
+          if ($max_page_expire !== NULL && $max_block_page != Cache::PERMANENT && ($max_page_expire == Cache::PERMANENT || $max_block_page < $max_page_expire)) {
+            $max_page_expire = $max_block_page;
+          }
+        }
+        else {
+          // Disable render caching of the whole page.
+          $max_page_expire = NULL;
+          $build['regions'][$region][$block_id] = $this->buildBlock($build['regions'][$region][$block_id]);
         }
       }
     }
+
     $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
+
+    // Set up render cache on the page level.
+    if ($max_page_expire !== NULL) {
+      $build['regions']['#cache'] = array(
+        'keys' => array_unique($page_cache_keys),
+        'tags' => $page->getCacheTags(),
+        'expire' => ($max_page_expire === Cache::PERMANENT) ? Cache::PERMANENT : REQUEST_TIME + $max_page_expire,
+      );
+    }
+
+    return $build;
+  }
+
+  /**
+   * #pre_render callback for building a block.
+   *
+   * Renders the content using the provided block plugin, and then:
+   * - if there is no content, aborts rendering, and makes sure the block won't
+   *   be rendered.
+   * - if there is content, moves the contextual links from the block content to
+   *   the block itself.
+   */
+  public function buildBlock($build) {
+    $content = $build['#block']->build();
+    // Remove the block plugin from the render array.
+    unset($build['#block']);
+    if (!empty($content)) {
+      $build['content'] = $content;
+    }
+    else {
+      // Abort rendering: render as the empty string and ensure this block is
+      // render cached, so we can avoid the work of having to repeatedly
+      // determine whether the block is empty. E.g. modifying or adding entities
+      // could cause the block to no longer be empty.
+      $build = array(
+        '#markup' => '',
+        '#cache' => $build['#cache'],
+      );
+    }
     return $build;
   }
 
