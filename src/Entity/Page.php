@@ -36,11 +36,11 @@ use Drupal\page_manager\Plugin\VariantAwareTrait;
  *     "status" = "status"
  *   },
  *   links = {
- *     "add-form" = "page_manager.page_add",
- *     "edit-form" = "page_manager.page_edit",
- *     "delete-form" = "page_manager.page_delete",
- *     "enable" = "page_manager.page_enable",
- *     "disable" = "page_manager.page_disable"
+ *     "add-form" = "/admin/structure/page_manager/add",
+ *     "edit-form" = "/admin/structure/page_manager/manage/{page}",
+ *     "delete-form" = "/admin/structure/page_manager/manage/{page}/delete",
+ *     "enable" = "/admin/structure/page_manager/manage/{page}/enable",
+ *     "disable" = "/admin/structure/page_manager/manage/{page}/disable"
  *   }
  * )
  */

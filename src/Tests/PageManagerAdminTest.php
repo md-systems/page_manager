@@ -36,7 +36,7 @@ class PageManagerAdminTest extends WebTestBase {
     parent::setUp();
 
     \Drupal::service('theme_handler')->install(['bartik', 'stark']);
-    \Drupal::config('system.theme')->set('admin', 'stark')->save();
+    $this->config('system.theme')->set('admin', 'stark')->save();
 
     $this->drupalLogin($this->drupalCreateUser(['administer pages', 'access administration pages', 'view the administration theme']));
   }
@@ -263,7 +263,7 @@ class PageManagerAdminTest extends WebTestBase {
    * Tests changing the admin theme of a page.
    */
   protected function doTestAdminPath() {
-    \Drupal::config('system.theme')->set('default', 'bartik')->save();
+    $this->config('system.theme')->set('default', 'bartik')->save();
     $this->drupalGet('admin/foo');
     $this->assertTheme('stark');
 
@@ -275,7 +275,7 @@ class PageManagerAdminTest extends WebTestBase {
     $this->assertTheme('bartik');
 
     // Reset theme.
-    \Drupal::config('system.theme')->set('default', 'stark')->save();
+    $this->config('system.theme')->set('default', 'stark')->save();
   }
 
   /**

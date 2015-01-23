@@ -8,7 +8,7 @@ page_manager.page_list:
   requirements:
     _permission: 'administer pages'
 
-page_manager.page_add:
+entity.page.add_form:
   path: '/admin/structure/page_manager/add'
   defaults:
     _entity_form: 'page.add'
@@ -16,7 +16,7 @@ page_manager.page_add:
   requirements:
     _entity_create_access: page
 
-page_manager.page_edit:
+entity.page.edit_form:
   path: '/admin/structure/page_manager/manage/{page}'
   defaults:
     _entity_form: 'page.edit'
@@ -24,7 +24,7 @@ page_manager.page_edit:
   requirements:
     _entity_access: page.update
 
-page_manager.page_delete:
+entity.page.delete_form:
   path: '/admin/structure/page_manager/manage/{page}/delete'
   defaults:
     _entity_form: 'page.delete'
@@ -32,7 +32,7 @@ page_manager.page_delete:
   requirements:
     _entity_access: page.delete
 
-page_manager.page_enable:
+entity.page.enable:
   path: '/admin/structure/page_manager/manage/{page}/enable'
   defaults:
     _controller: '\Drupal\page_manager\Controller\PageManagerController::performPageOperation'
@@ -40,7 +40,7 @@ page_manager.page_enable:
   requirements:
     _entity_access: 'page.update'
 
-page_manager.page_disable:
+entity.page.disable:
   path: '/admin/structure/page_manager/manage/{page}/disable'
   defaults:
     _controller: '\Drupal\page_manager\Controller\PageManagerController::performPageOperation'
