@@ -56,8 +56,7 @@ class PageListBuilder extends ConfigEntityListBuilder {
       return [
         'data' => [
           '#type' => 'link',
-          // @todo Update once https://www.drupal.org/node/2351379 is in.
-          '#url' => Url::fromUri('base://' . trim($path, '/')),
+          '#url' => Url::fromUri('user-path:' . trim($path, '/')),
           '#title' => $path,
         ],
       ];

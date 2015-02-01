@@ -372,7 +372,7 @@ class PageManagerAdminTest extends WebTestBase {
    *   The theme name.
    */
   protected function assertTheme($theme_name) {
-    $url = Url::fromUri('base://core/themes/' . $theme_name . '/logo.png', ['absolute' => TRUE])->toString();
+    $url = Url::fromUri('user-path:core/themes/' . $theme_name . '/logo.png', ['absolute' => TRUE])->toString();
     $elements = $this->xpath('//img[@src=:url]', [':url' => $url]);
     $this->assertEqual(count($elements), 1, String::format('Page is rendered in @theme', ['@theme' => $theme_name]));
   }
