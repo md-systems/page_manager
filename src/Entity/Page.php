@@ -300,4 +300,18 @@ class Page extends ConfigEntityBase implements PageInterface {
     return $this->id() == $fallback_page;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function __sleep() {
+    $vars = parent::__sleep();
+
+    $unset_vars = array('variantCollection', 'accessConditionCollection', 'executable');
+    foreach ($unset_vars as $unset_var) {
+      unset($vars[array_search($unset_var, $vars)]);
+    }
+
+    return $vars;
+  }
+
 }
