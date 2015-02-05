@@ -67,6 +67,7 @@ abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, PageInterface $page = NULL, $display_variant_id = NULL, $block_id = NULL) {
     $this->page = $page;
     $this->displayVariant = $page->getVariant($display_variant_id);
+    $form_state->set('display_variant_id', $display_variant_id);
     $this->block = $this->prepareBlock($block_id);
 
     $form['#tree'] = TRUE;
@@ -99,6 +100,9 @@ abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
+    $this->displayVariant = $this->page->getVariant($form_state->get('display_variant_id'));
+    $this->block = $this->prepareBlock($this->block->getConfiguration()['uuid']);
+
     $settings = (new FormState())->setValues($form_state->getValue('settings'));
     // Call the plugin validate handler.
     $this->block->validateConfigurationForm($form, $settings);
