@@ -306,9 +306,16 @@ class Page extends ConfigEntityBase implements PageInterface {
   public function __sleep() {
     $vars = parent::__sleep();
 
-    $unset_vars = array('variantCollection', 'accessConditionCollection', 'executable');
-    foreach ($unset_vars as $unset_var) {
-      unset($vars[array_search($unset_var, $vars)]);
+    // Avoid serializing plugin collections, collection as they might contain
+    // references to a lot of objects including the container.
+    $unset_vars = array('variantCollection' => 'display_variants', 'accessConditionCollection' => 'access_variants', 'executable' => NULL);
+    foreach ($unset_vars as $unset_var => $configuration_key) {
+      if (!empty($this->$unset_var)) {
+        if ($configuration_key) {
+          $this->set($configuration_key, $this->$unset_var->getConfiguration());
+        }
+        unset($vars[array_search($unset_var, $vars)]);
+      }
     }
 
     return $vars;
