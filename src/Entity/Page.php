@@ -182,7 +182,7 @@ class Page extends ConfigEntityBase implements PageInterface {
   public function postCreate(EntityStorageInterface $storage) {
     parent::postCreate($storage);
     // Ensure there is at least one display variant.
-    if (!$this->getVariants()->count()) {
+    if (!count($this->getVariants())) {
       $this->addVariant([
         'id' => 'http_status_code',
         'label' => 'Default',

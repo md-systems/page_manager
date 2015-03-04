@@ -48,7 +48,7 @@ class VariantAwareTraitTest extends UnitTestCase {
 
     $variants = $trait_object->getVariants();
     $this->assertInstanceOf('Drupal\page_manager\Plugin\VariantCollection', $variants);
-    $this->assertSame(0, $variants->count());
+    $this->assertSame(0, count($variants));
   }
 
   /**
@@ -72,7 +72,7 @@ class VariantAwareTraitTest extends UnitTestCase {
 
     $variants = $trait_object->getVariants();
     $this->assertInstanceOf('Drupal\page_manager\Plugin\VariantCollection', $variants);
-    $this->assertSame(2, $variants->count());
+    $this->assertSame(2, count($variants));
     return $variants;
   }
 
