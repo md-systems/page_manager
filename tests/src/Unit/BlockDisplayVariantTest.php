@@ -172,9 +172,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
                 1 => 'page:page_id',
               ],
               'contexts' => [
-                0 => 'languages:language_interface',
-                1 => 'theme',
-                2 => 'url',
+                0 => 'url',
               ],
               'max-age' => 3600,
             ],
@@ -302,20 +300,20 @@ class BlockDisplayVariantTest extends UnitTestCase {
 
     $expected_cache_block1 = [
       'tags' => ['block_plugin1:block_plugin_id', 'page:page_id'],
-      'contexts' => ['languages:language_interface', 'theme', 'url'],
+      'contexts' => ['url'],
       'max-age' => 3600,
       'keys' => ['page_manager_page', 'page_id', 'block', 'block1'],
     ];
     $expected_cache_block2 = [
       'tags' => ['block_plugin2:block_plugin_id', 'page:page_id'],
-      'contexts' => ['languages:language_interface', 'theme'],
+      'contexts' => [],
       'max-age' => Cache::PERMANENT,
       'keys' => ['page_manager_page', 'page_id', 'block', 'block2'],
     ];
 
     $expected_cache_page = [
       'keys' => ['page_manager_page', 'page_id', 'UUID', 'block1', 'block2'],
-      'contexts' => ['languages:language_interface', 'theme', 'url'],
+      'contexts' => ['url'],
       'max-age' => 3600,
     ];
 

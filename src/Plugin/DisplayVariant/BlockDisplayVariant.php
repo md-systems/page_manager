@@ -144,15 +144,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       // @todo should have an API for this?
       $this->configuration['uuid'],
     ];
-
-    // Define default cache contexts for blocks, also build a list of all
-    // contexts, that can be added to the page.
-    // @todo Remove after https://www.drupal.org/node/2453059 is committed  .
-    $default_cache_contexts = array(
-      'languages:' . LanguageInterface::TYPE_INTERFACE,
-      'theme',
-    );
-    $page_cache_contexts = $default_cache_contexts;
+    $page_cache_contexts = [];
 
     $contexts = $this->getContexts();
     foreach ($this->getRegionAssignments() as $region => $blocks) {
@@ -190,7 +182,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
             // only the page is a config entity that will trigger cache tag
             // invalidations in case of block configuration changes.
             'tags' => Cache::mergeTags($page->getCacheTags(), $block->getCacheTags()),
-            'contexts' => Cache::mergeContexts($default_cache_contexts, $block->getCacheContexts()),
+            'contexts' => $block->getCacheContexts(),
             'max-age' => $max_age,
           ),
         ];
