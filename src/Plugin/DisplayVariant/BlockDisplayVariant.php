@@ -186,6 +186,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
             'max-age' => $max_age,
           ),
         ];
+        // Build a list of all contexts for the whole page.
         $page_cache_contexts = Cache::mergeContexts($page_cache_contexts, $block_build['#cache']['contexts']);
 
         if (!empty($block_build['#configuration']['label'])) {
