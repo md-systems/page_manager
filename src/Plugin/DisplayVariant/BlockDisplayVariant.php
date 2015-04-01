@@ -12,8 +12,11 @@ use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Uuid\UuidInterface;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Display\VariantBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
@@ -126,6 +129,31 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    */
   public function build() {
     $build = [];
+
+    // Default the max page age to permanent.
+    $max_page_age = Cache::PERMANENT;
+
+    $page = $this->executable->getPage();
+
+    // Set default page cache keys that include the page and display.
+    $page_cache_keys = [
+      'page_manager_page',
+      // The page ID.
+      $page->id(),
+      // The UUID of this display.
+      // @todo should have an API for this?
+      $this->configuration['uuid'],
+    ];
+
+    // Define default cache contexts for blocks, also build a list of all
+    // contexts, that can be added to the page.
+    // @todo Remove after https://www.drupal.org/node/2453059 is committed  .
+    $default_cache_contexts = array(
+      'languages:' . LanguageInterface::TYPE_INTERFACE,
+      'theme',
+    );
+    $page_cache_contexts = $default_cache_contexts;
+
     $contexts = $this->getContexts();
     foreach ($this->getRegionAssignments() as $region => $blocks) {
       if (!$blocks) {
@@ -133,8 +161,8 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       }
 
       $region_name = Html::getClass("block-region-$region");
-      $build[$region]['#prefix'] = '<div class="' . $region_name . '">';
-      $build[$region]['#suffix'] = '</div>';
+      $build['regions'][$region]['#prefix'] = '<div class="' . $region_name . '">';
+      $build['regions'][$region]['#suffix'] = '</div>';
 
       /** @var $blocks \Drupal\Core\Block\BlockPluginInterface[] */
       $weight = 0;
@@ -142,26 +170,113 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         if ($block instanceof ContextAwarePluginInterface) {
           $this->contextHandler()->applyContextMapping($block, $contexts);
         }
-        if ($block->access($this->account)) {
-          $block_render_array = [
-            '#theme' => 'block',
-            '#attributes' => [],
-            '#weight' => $weight++,
-            '#configuration' => $block->getConfiguration(),
-            '#plugin_id' => $block->getPluginId(),
-            '#base_plugin_id' => $block->getBaseId(),
-            '#derivative_plugin_id' => $block->getDerivativeId(),
-          ];
-          if (!empty($block_render_array['#configuration']['label'])) {
-            $block_render_array['#configuration']['label'] = SafeMarkup::checkPlain($block_render_array['#configuration']['label']);
-          }
-          $block_render_array['content'] = $block->build();
-
-          $build[$region][$block_id] = $block_render_array;
+        if (!$block->access($this->account)) {
+          continue;
         }
+
+        $max_age = $block->getCacheMaxAge();
+
+        $block_build = [
+          '#theme' => 'block',
+          '#attributes' => array(),
+          '#weight' => $weight++,
+          '#configuration' => $block->getConfiguration(),
+          '#plugin_id' => $block->getPluginId(),
+          '#base_plugin_id' => $block->getBaseId(),
+          '#derivative_plugin_id' => $block->getDerivativeId(),
+          '#block_plugin' => $block,
+          '#cache' => array(
+            // Each block needs cache tags of the page and the block plugin, as
+            // only the page is a config entity that will trigger cache tag
+            // invalidations in case of block configuration changes.
+            'tags' => Cache::mergeTags($page->getCacheTags(), $block->getCacheTags()),
+            'contexts' => Cache::mergeContexts($default_cache_contexts, $block->getCacheContexts()),
+            'max-age' => $max_age,
+          ),
+        ];
+        $page_cache_contexts = Cache::mergeContexts($page_cache_contexts, $block_build['#cache']['contexts']);
+
+        if (!empty($block_build['#configuration']['label'])) {
+          $block_build['#configuration']['label'] = SafeMarkup::checkPlain($block_build['#configuration']['label']);
+        }
+
+        // If the Block is cacheable, generate cache keys for the Block and
+        // build the Block using #pre_render. If it's not cacheable, then build
+        // it directly and also disable Page caching.
+        if ($block->isCacheable()) {
+          $block_build['#pre_render'][] = array($this, 'buildBlock');
+          // Generic cache keys, with the block plugin's custom keys appended.
+          $default_cache_keys = array(
+            'page_manager_page',
+            $page->id(),
+            'block',
+            $block_id,
+          );
+          $block_cache_keys = $block->getCacheKeys();
+          $block_build['#cache'] += array(
+            'keys' => array_merge($default_cache_keys, $block_cache_keys),
+          );
+
+          // Also include the block ID and cache keys in the page cache keys.
+          $page_cache_keys = array_merge($page_cache_keys, array($block_id), $block_cache_keys);
+          // Maintain the max page age time if it is not currently NULL
+          // (disabled), set it to max block expire if that is not permanent and
+          // lower than the current max page age or that is PERMANENT.
+          if ($max_page_age !== 0 && $max_age != Cache::PERMANENT && ($max_page_age == Cache::PERMANENT || $max_age < $max_page_age)) {
+            $max_page_age = $max_age;
+          }
+        }
+        else {
+          $max_page_age = 0;
+          $block_build = $this->buildBlock($block_build);
+        }
+        $build['regions'][$region][$block_id] = $block_build;
       }
     }
+
     $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
+
+    if ($max_page_age !== 0) {
+      // If all blocks of this page can be cached, then the max page age is not
+      // 0. In this case, we additionally cache the whole page, so we need
+      // to fetch fewer caches. Also explicitly provide the cache contexts,
+      // additional contexts might still bubble up from the block content, but
+      // if not, then we save a cache redirection.
+      // We don't have to set those values in case we can't cache all blocks,
+      // as they will bubble up from the blocks.
+      $build['regions']['#cache'] = array(
+        'keys' => $page_cache_keys,
+        'contexts' => $page_cache_contexts,
+        'max-age' => $max_page_age,
+      );
+    }
+
+    return $build;
+  }
+
+  /**
+   * #pre_render callback for building a block.
+   *
+   * Renders the content using the provided block plugin, if there is no
+   * content, aborts rendering, and makes sure the block won't be rendered.
+   */
+  public function buildBlock($build) {
+    $content = $build['#block_plugin']->build();
+    // Remove the block plugin from the render array.
+    unset($build['#block_plugin']);
+    if (!empty($content)) {
+      $build['content'] = $content;
+    }
+    else {
+      // Abort rendering: render as the empty string and ensure this block is
+      // render cached, so we can avoid the work of having to repeatedly
+      // determine whether the block is empty. E.g. modifying or adding entities
+      // could cause the block to no longer be empty.
+      $build = array(
+        '#markup' => '',
+        '#cache' => $build['#cache'],
+      );
+    }
     return $build;
   }
 
