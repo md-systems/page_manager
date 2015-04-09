@@ -97,7 +97,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->willReturn(array('block_plugin:block_plugin_id'));
     $block1->expects($this->once())
       ->method('getCacheMaxAge')
-      ->willReturn(3600);
+      ->willReturn(0);
     $block1->expects($this->once())
       ->method('getCacheContexts')
       ->willReturn(['url']);
@@ -167,6 +167,12 @@ class BlockDisplayVariantTest extends UnitTestCase {
             '#base_plugin_id' => 'block_base_plugin_id',
             '#derivative_plugin_id' => 'block_derivative_plugin_id',
             '#cache' => [
+              'keys' => [
+                0 => 'page_manager_page',
+                1 => 'page_id',
+                2 => 'block',
+                3 => 'block1',
+              ],
               'tags' => [
                 0 => 'block_plugin:block_plugin_id',
                 1 => 'page:page_id',
@@ -174,7 +180,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
               'contexts' => [
                 0 => 'url',
               ],
-              'max-age' => 3600,
+              'max-age' => 0,
             ],
             'content' => [
               '#markup' => 'block1_build_value',
@@ -184,7 +190,14 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ],
       '#title' => 'Page title',
     ];
-    $this->assertSame($expected_build, $display_variant->build());
+
+    // Call build and the #pre_render callback, remove it from the render array
+    // to simplify the assertion.
+    $build = $display_variant->build();
+    $build['regions']['top']['block1'] = $display_variant->buildBlock($build['regions']['top']['block1']);
+    unset($build['regions']['top']['block1']['#pre_render']);
+
+    $this->assertSame($expected_build, $build);
   }
 
 
@@ -222,18 +235,6 @@ class BlockDisplayVariantTest extends UnitTestCase {
     $block2->expects($this->once())
       ->method('access')
       ->will($this->returnValue(TRUE));
-    $block1->expects($this->once())
-      ->method('isCacheable')
-      ->willReturn(TRUE);
-    $block2->expects($this->once())
-      ->method('isCacheable')
-      ->willReturn(TRUE);
-    $block1->expects($this->once())
-      ->method('getCacheKeys')
-      ->willReturn([]);
-    $block2->expects($this->once())
-      ->method('getCacheKeys')
-      ->willReturn([]);
     $block1->expects($this->once())
       ->method('getCacheContexts')
       ->willReturn(['url']);
@@ -299,16 +300,16 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->will($this->returnValue($page_title));
 
     $expected_cache_block1 = [
+      'keys' => ['page_manager_page', 'page_id', 'block', 'block1'],
       'tags' => ['block_plugin1:block_plugin_id', 'page:page_id'],
       'contexts' => ['url'],
       'max-age' => 3600,
-      'keys' => ['page_manager_page', 'page_id', 'block', 'block1'],
     ];
     $expected_cache_block2 = [
+      'keys' => ['page_manager_page', 'page_id', 'block', 'block2'],
       'tags' => ['block_plugin2:block_plugin_id', 'page:page_id'],
       'contexts' => [],
       'max-age' => Cache::PERMANENT,
-      'keys' => ['page_manager_page', 'page_id', 'block', 'block2'],
     ];
 
     $expected_cache_page = [
