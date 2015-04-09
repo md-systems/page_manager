@@ -197,7 +197,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         }
 
         // Update the page max age, set it to the lowest max age of all blocks.
-        $max_page_age = $this->maintainPageMaxAge($max_age, $max_page_age);
+        $max_page_age = Cache::mergeMaxAges($max_age, $max_page_age);
         $build['regions'][$region][$block_id] = $block_build;
       }
     }
@@ -567,25 +567,6 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    */
   protected function uuidGenerator() {
     return $this->uuidGenerator;
-  }
-
-  /**
-   * Maintain the max page age, ensure it is lower than the block max age.
-   *
-   * @param int $block_max_age
-   *   The max age of the block.
-   * @param int $max_page_age
-   *   The current max age of the page.
-   *
-   * @return int
-   *   The updated max age of the page.
-   */
-  protected function maintainPageMaxAge($block_max_age, $max_page_age) {
-    if ($block_max_age != Cache::PERMANENT && ($max_page_age == Cache::PERMANENT || $block_max_age < $max_page_age)) {
-      $max_page_age = $block_max_age;
-      return $max_page_age;
-    }
-    return $max_page_age;
   }
 
 }
