@@ -96,6 +96,58 @@ interface PageInterface extends ConfigEntityInterface, EntityWithPluginCollectio
   public function getAccessLogic();
 
   /**
+   * Returns the static context configurations for this page entity.
+   *
+   * @return array
+   *   An array of static context configurations.
+   */
+  public function getStaticContexts();
+
+  /**
+   * Adds a new static context to the page entity.
+   *
+   * @param array $configuration
+   *   An array of configuration for the new static context.
+   *
+   * @return string
+   *   The unique machine name of the static context.
+   */
+  public function addStaticContext(array $configuration);
+
+  /**
+   * Retrieves a specific static context.
+   *
+   * @param string $name
+   *   The static context unique name.
+   *
+   * @return array
+   *   The configuration array of the static context
+   */
+  public function getStaticContext($name);
+
+  /**
+   * Updates a specific static context.
+   *
+   * @param string $name
+   *   The static context unique name.
+   * @param array $configuration
+   *   A new array of configuration for the static context.
+   *
+   * @return $this
+   */
+  public function updateStaticContext($name, $configuration);
+
+  /**
+   * Removes a specific static context.
+   *
+   * @param string $name
+   *   The static context unique name.
+   *
+   * @return $this
+   */
+  public function removeStaticContext($name);
+
+  /**
    * Gets the values for all defined contexts.
    *
    * @return \Drupal\Component\Plugin\Context\ContextInterface[]

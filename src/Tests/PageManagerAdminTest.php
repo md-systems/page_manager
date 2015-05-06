@@ -38,7 +38,7 @@ class PageManagerAdminTest extends WebTestBase {
     \Drupal::service('theme_handler')->install(['bartik', 'classy']);
     $this->config('system.theme')->set('admin', 'classy')->save();
 
-    $this->drupalLogin($this->drupalCreateUser(['administer pages', 'access administration pages', 'view the administration theme']));
+    $this->drupalLogin($this->drupalCreateUser(['administer pages', 'access administration pages', 'view the administration theme'], 'administrator'));
   }
 
   /**
@@ -59,6 +59,7 @@ class PageManagerAdminTest extends WebTestBase {
     $this->doTestAddBlockWithAjax();
     $this->doTestEditBlock();
     $this->doTestExistingPathWithoutParameters();
+    $this->doTestStaticContext();
     $this->doTestDeletePage();
   }
 
@@ -372,6 +373,64 @@ class PageManagerAdminTest extends WebTestBase {
     // Ensure the existing path leads to the new page.
     $this->drupalGet('admin');
     $this->assertResponse(404);
+  }
+
+  /**
+   * Tests adding static context page.
+   */
+  protected function doTestStaticContext() {
+    $this->drupalGet('admin/structure/page_manager/manage/foo');
+    // Add new static context.
+    $this->clickLink(t('Add new static context'));
+    $edit = array(
+      'machine_name' => 'test_context',
+      'label' => 'Test context',
+      'entity_type' => 'user',
+      'selection' => 'administrator ' . '(' . $this->loggedInUser->id() . ')',
+    );
+    $this->drupalPostForm(NULL, $edit, t('Add Static Context'));
+    $this->assertText(t('The Test context static context has been added.'));
+
+    // Add a new display variant.
+    $this->clickLink(t('Add new display variant'));
+    $this->clickLink(t('Block page'));
+    $this->drupalPostForm(NULL, array('display_variant[label]' => 'Test display variant'), t('Add display variant'));
+    $this->assertText(t('he Test display variant display variant has been added.'));
+
+    // Add new block with the static context.
+    $this->clickLink(t('Add new block'));
+    $this->clickLink(t('Entity view (User)'));
+    $this->drupalPostForm(NULL, array('region' => 'top', 'context_mapping[entity]' => 'test_context'), t('Add block'));
+    $this->drupalPostForm(NULL, NULL, t('Update display variant'));
+    $this->assertText(t('The Test display variant display variant has been updated.'));
+
+    // Check the context in page. Viewing a user does not actually display
+    // anything we can use to verify it is the correct user. We test the block
+    // and the context's appearance.
+    $this->drupalGet('admin/foo');
+    $this->assertText(t('Entity view (User)'));
+    $this->assertText(t('Member for'));
+
+    // Edit the static context.
+    $this->drupalGet('admin/structure/page_manager/manage/foo');
+    $this->clickLink(t('Edit'));
+    $edit = array(
+      'machine_name' => 'test_context_edited',
+      'label' => 'Test context edited',
+      'entity_type' => 'user',
+      'selection' => 'administrator ' . '(' . $this->loggedInUser->id() . ')',
+    );
+    $this->drupalPostForm(NULL, $edit, t('Update Static Context'));
+    $this->assertText(t('The Test context edited static context has been updated.'));
+    $this->assertText(t('Test context edited'));
+    $this->assertText(t('test_context_edited'));
+
+    // Remove the static context.
+    $this->clickLink(t('Delete'));
+    $this->drupalPostForm(NULL, NULL, t('Delete'));
+    $this->assertText(t('The static context Test context edited has been removed.'));
+    $this->drupalGet('admin/structure/page_manager/manage/foo');
+    $this->assertNoText(t('Test context edited'));
   }
 
   /**

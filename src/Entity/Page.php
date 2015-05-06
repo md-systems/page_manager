@@ -105,6 +105,15 @@ class Page extends ConfigEntityBase implements PageInterface {
   protected $use_admin_theme;
 
   /**
+   * Static context references.
+   *
+   * A list of arrays with the keys name, label, type and value.
+   *
+   * @var array
+   */
+  protected $static_context = [];
+
+  /**
    * Stores a reference to the executable version of this page.
    *
    * This is only used on runtime, and is not stored.
@@ -145,6 +154,7 @@ class Page extends ConfigEntityBase implements PageInterface {
       'access_conditions',
       'access_logic',
       'use_admin_theme',
+      'static_context',
     ];
     foreach ($names as $name) {
       $properties[$name] = $this->get($name);
@@ -273,6 +283,62 @@ class Page extends ConfigEntityBase implements PageInterface {
    */
   public function getAccessLogic() {
     return $this->access_logic;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getStaticContexts() {
+    return $this->get('static_context');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function addStaticContext(array $configuration) {
+    $static_contexts = $this->getStaticContexts();
+    $static_contexts[] = $configuration;
+    $this->set('static_context', $static_contexts);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getStaticContext($name) {
+    $static_contexts = $this->getStaticContexts();
+    foreach ($static_contexts as $static_context) {
+      if ($static_context['machine_name'] == $name) {
+        return $static_context;
+      }
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function updateStaticContext($name, $configuration) {
+    $static_contexts = $this->getStaticContexts();
+    foreach ($static_contexts as $key => $static_context) {
+      if ($static_context['machine_name'] == $name) {
+        $static_contexts[$key] = $configuration;
+      }
+    }
+    $this->set('static_context', $static_contexts);
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function removeStaticContext($name) {
+    $static_contexts = $this->getStaticContexts();
+    foreach ($static_contexts as $key => $static_context) {
+      if ($static_context['machine_name'] == $name) {
+        unset($static_contexts[$key]);
+      }
+    }
+    $this->set('static_context', $static_contexts);
+    return $this;
   }
 
   /**

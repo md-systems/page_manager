@@ -9,14 +9,46 @@ namespace Drupal\page_manager\Form;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
-use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a form for editing a page entity.
  */
 class PageEditForm extends PageFormBase {
+
+  /**
+   * The entity manager.
+   *
+   * @var \Drupal\Core\Entity\EntityManagerInterface
+   */
+  protected $entityManager;
+
+  /**
+   * Construct a new PageEditForm.
+   *
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
+   *   The entity query factory.
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   *   The entity manager.
+   */
+  public function __construct(QueryFactory $entity_query, EntityManagerInterface $entity_manager) {
+    $this->entityQuery = $entity_query;
+    $this->entityManager = $entity_manager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity.query'),
+      $container->get('entity.manager')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -43,6 +75,77 @@ class PageEditForm extends PageFormBase {
         'button-action',
       ]
     ]);
+
+    $form['context'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Available context'),
+      '#open' => TRUE,
+    ];
+    $form['context']['add'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Add new static context'),
+      '#url' => Url::fromRoute('page_manager.static_context_add', [
+        'page' => $this->entity->id(),
+      ]),
+      '#attributes' => $add_button_attributes,
+      '#attached' => [
+        'library' => [
+          'core/drupal.ajax',
+        ],
+      ],
+    ];
+    $form['context']['available_context'] = [
+      '#type' => 'table',
+      '#header' => [
+        $this->t('Label'),
+        $this->t('Name'),
+        $this->t('Type'),
+        $this->t('Operations'),
+      ],
+      '#empty' => $this->t('There is no available context.'),
+    ];
+    $contexts = $this->entity->getContexts();
+    foreach ($contexts as $name => $context) {
+      $context_definition = $context->getContextDefinition();
+
+      $row = [];
+      $row['label'] = [
+        '#markup' => $context_definition->getLabel(),
+      ];
+      $row['machine_name'] = [
+        '#markup' => $name,
+      ];
+      $row['type'] = [
+        '#markup' => $context_definition->getDataType(),
+      ];
+
+      // Add operation links if the context is a static context.
+      $operations = [];
+      if ($this->entity->getStaticContext($name)) {
+        $operations['edit'] = [
+          'title' => $this->t('Edit'),
+          'url' => Url::fromRoute('page_manager.static_context_edit', [
+            'page' => $this->entity->id(),
+            'name' => $name,
+          ]),
+          'attributes' => $attributes,
+        ];
+        $operations['delete'] = [
+          'title' => $this->t('Delete'),
+          'url' => Url::fromRoute('page_manager.static_context_delete', [
+            'page' => $this->entity->id(),
+            'name' => $name,
+          ]),
+          'attributes' => $attributes,
+        ];
+      }
+      $row['operations'] = [
+        '#type' => 'operations',
+        '#links' => $operations,
+      ];
+
+      $form['context']['available_context'][$name] = $row;
+    }
 
     $form['display_variant_section'] = [
       '#type' => 'details',
@@ -202,6 +305,26 @@ class PageEditForm extends PageFormBase {
     parent::save($form, $form_state);
     drupal_set_message($this->t('The %label page has been updated.', ['%label' => $this->entity->label()]));
     $form_state->setRedirect('page_manager.page_list');
+  }
+
+  /**
+   * Form submit callback to add a context reference.
+   */
+  public function submitStaticContext(array $form, FormStateInterface $form_state) {
+    $input = $form_state->getValue(['static', 'selection']);
+    $entity_type = $form_state->getValue(['static', 'entity_type']);
+    $entity = $this->entityManager->getStorage($entity_type)->load($input);
+    $new_static = [
+      'machine_name' => $form_state->getValue(['static', 'machine_name']),
+      'label' => $form_state->getValue(['static', 'label']),
+      'type' => 'entity:' . $entity_type,
+      'value' => $entity->uuid(),
+    ];
+
+    $static_context = (array) $this->entity->get('static_context');
+    $static_context[] = $new_static;
+    $this->entity->set('static_context', $static_context);
+    $this->entity->save();
   }
 
 }
