@@ -86,15 +86,21 @@ class PageManagerRoutes extends RouteSubscriberBase {
       }
 
       $arguments = [];
-      // Replace % with proper route slugs ("{arg_$i}").
+      // Replace % placeholders with proper route slugs ("{arg}") and set
+      // parameter types.
       if (!$altered_route) {
         $bits = explode('/', $path);
         $arg_counter = 0;
         foreach ($bits as $pos => $bit) {
-          if ($bit == '%') {
-            $arg_id = 'arg_' . $arg_counter++;
-            $arguments[$arg_id] = NULL;
-            $bits[$pos] = '{' . $arg_id . '}';
+          // Allowed placeholder patterns: %, %arg, %arg.type
+          if (preg_match('/%(([\w_]+)\.)?([\w_]+)/', $bit, $matches)) {
+            list($bit, $argdot, $arg, $type) = $matches;
+            $arg = $arg ?: 'arg_' . $arg_counter++;
+            $arguments[$arg] = NULL;
+            $bits[$pos] = '{' . $arg . '}';
+            $parameters[$arg] = [
+              'type' => $type,
+            ];
           }
         }
         $path = implode('/', $bits);
