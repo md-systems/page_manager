@@ -152,6 +152,56 @@ class PageManagerRoutesTest extends UnitTestCase {
   }
 
   /**
+   * Tests adding routes for an argument.
+   *
+   * @covers ::alterRoutes
+   */
+  public function testAlterRoutesWithArgument() {
+    // Set up a valid page.
+    $page1 = $this->getMock('Drupal\page_manager\PageInterface');
+    $page1->expects($this->once())
+      ->method('status')
+    ->willReturn(True);
+    $page1->expects($this->once())
+      ->method('getPath')
+      ->willReturn('/page1/%');
+    $page1->expects($this->once())
+      ->method('usesAdminTheme')
+      ->willReturn(True);
+    $pages['page1'] = $page1;
+
+    $this->pageStorage->expects($this->once())
+      ->method('loadMultiple')
+      ->will($this->returnValue($pages));
+
+    $collection = new RouteCollection();
+    $route_event = new RouteBuildEvent($collection);
+    $this->routeSubscriber->onAlterRoutes($route_event);
+
+    $this->assertSame(1, $collection->count());
+    $route = $collection->get('page_manager.page_view_page1');
+    $expected_defaults = [
+      '_entity_view' => 'page_manager_page',
+      'page_manager_page' => 'page1',
+      '_title' => NULL,
+      'arg_0' => NULL,
+    ];
+    $expected_requirements = [
+      '_entity_access' => 'page_manager_page.view',
+    ];
+    $expected_options = [
+      'compiler_class' => 'Symfony\Component\Routing\RouteCompiler',
+      'parameters' => [
+        'page_manager_page' => [
+          'type' => 'entity:page',
+        ],
+      ],
+      '_admin_route' => TRUE,
+    ];
+    $this->assertMatchingRoute($route, '/page1/{arg_0}', $expected_defaults, $expected_requirements, $expected_options);
+  }
+
+  /**
    * Tests overriding an existing route.
    *
    * @covers ::alterRoutes
