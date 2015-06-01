@@ -59,6 +59,7 @@ abstract class PageFormBase extends EntityForm {
       '#title' => $this->t('Label'),
       '#description' => $this->t('The label for this page.'),
       '#default_value' => $this->entity->label(),
+      '#required' => TRUE,
       '#maxlength' => '255',
     ];
     $form['id'] = [

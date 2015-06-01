@@ -35,6 +35,15 @@ use Drupal\page_manager\Plugin\VariantAwareTrait;
  *     "label" = "label",
  *     "status" = "status"
  *   },
+ *   config_export = {
+ *     "id",
+ *     "label",
+ *     "use_admin_theme",
+ *     "path",
+ *     "display_variants",
+ *     "access_logic",
+ *     "access_conditions",
+ *   },
  *   links = {
  *     "add-form" = "/admin/structure/page_manager/add",
  *     "edit-form" = "/admin/structure/page_manager/manage/{page}",

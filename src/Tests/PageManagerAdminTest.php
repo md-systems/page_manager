@@ -69,15 +69,19 @@ class PageManagerAdminTest extends WebTestBase {
   protected function doTestAddPage() {
     $this->drupalGet('admin/structure');
     $this->clickLink('Pages');
-    $this->assertText('There is no Page yet.');
+    $this->assertText('Add a new page.');
 
-    // Add a new page.
+    // Add a new page without a label.
     $this->clickLink('Add page');
     $edit = [
-      'label' => 'Foo',
       'id' => 'foo',
       'path' => 'admin/foo',
     ];
+    $this->drupalPostForm(NULL, $edit, 'Save');
+    $this->assertText('Label field is required.');
+
+    // Add a new page with a label.
+    $edit += ['label' => 'Foo'];
     $this->drupalPostForm(NULL, $edit, 'Save');
     $this->assertRaw(SafeMarkup::format('The %label page has been added.', ['%label' => 'Foo']));
 
