@@ -61,6 +61,12 @@ class RouteParamContext implements EventSubscriberInterface {
     $request = $this->requestStack->getCurrentRequest();
     $executable = $event->getPageExecutable();
     $routes = $this->routeProvider->getRoutesByPattern($executable->getPage()->getPath())->all();
+
+    if (empty($routes)) {
+      drupal_set_message($this->t('The route for this page might not yet have been built. Try refreshing the page to ensure any route parameter context is included in the list.'), 'warning');
+      return;
+    }
+
     $route = reset($routes);
 
     if ($route_contexts = $route->getOption('parameters')) {
