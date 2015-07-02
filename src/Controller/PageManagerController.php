@@ -210,7 +210,7 @@ class PageManagerController extends ControllerBase {
         ]),
         'attributes' => [
           'class' => ['use-ajax'],
-          'data-accepts' => 'application/vnd.drupal-modal',
+          'data-dialog-type' => 'modal',
           'data-dialog-options' => Json::encode([
             'width' => 'auto',
           ]),
@@ -244,7 +244,7 @@ class PageManagerController extends ControllerBase {
         ]),
         'attributes' => [
           'class' => ['use-ajax'],
-          'data-accepts' => 'application/vnd.drupal-modal',
+          'data-dialog-type' => 'modal',
           'data-dialog-options' => Json::encode([
             'width' => 'auto',
           ]),
@@ -281,7 +281,7 @@ class PageManagerController extends ControllerBase {
         ]),
         'attributes' => [
           'class' => ['use-ajax'],
-          'data-accepts' => 'application/vnd.drupal-modal',
+          'data-dialog-type' => 'modal',
           'data-dialog-options' => Json::encode([
             'width' => 'auto',
           ]),
@@ -339,7 +339,7 @@ class PageManagerController extends ControllerBase {
         ]),
         'attributes' => [
           'class' => ['use-ajax'],
-          'data-accepts' => 'application/vnd.drupal-modal',
+          'data-dialog-type' => 'modal',
           'data-dialog-options' => Json::encode([
             'width' => 'auto',
           ]),

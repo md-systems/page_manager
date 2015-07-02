@@ -58,7 +58,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
   public function testBuildNoCache() {
     $container = new ContainerBuilder();
     $cache_contexts = $this
-      ->getMockBuilder('Drupal\Core\Cache\CacheContextsManager')
+      ->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
       ->disableOriginalConstructor()
       ->getMock();
     $container->set('cache_contexts_manager', $cache_contexts);
@@ -209,7 +209,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
   public function testBuildCache() {
     $container = new ContainerBuilder();
     $cache_contexts = $this
-      ->getMockBuilder('Drupal\Core\Cache\CacheContextsManager')
+      ->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
       ->disableOriginalConstructor()
       ->getMock();
     $container->set('cache_contexts_manager', $cache_contexts);
