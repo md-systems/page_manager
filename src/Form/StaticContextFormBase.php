@@ -102,7 +102,9 @@ abstract class StaticContextFormBase extends FormBase {
       '#type' => 'select',
       '#title' => $this->t('Entity type'),
       '#options' => $this->entityManager->getEntityTypeLabels(TRUE),
-      '#limit_validation_errors' => array(array('context', 'entity_type')),
+      '#limit_validation_errors' => array(array('entity_type')),
+      '#submit' => ['::rebuildSubmit'],
+      '#executes_submit_callback' => TRUE,
       '#ajax' => array(
         'callback' => '::updateEntityType',
         'wrapper' => 'add-static-context-wrapper',
@@ -111,9 +113,11 @@ abstract class StaticContextFormBase extends FormBase {
     ];
 
     $entity = NULL;
-    if ($form_state->hasValue(['context', 'entity_type'])) {
-      $entity_type = $form_state->getValue(['context', 'entity_type']);
-      $entity = $this->entityManager->loadEntityByUuid($entity_type, $this->staticContext['value']);
+    if ($form_state->hasValue(['entity_type'])) {
+      $entity_type = $form_state->getValue(['entity_type']);
+      if ($this->staticContext['value']) {
+        $entity = $this->entityManager->loadEntityByUuid($entity_type, $this->staticContext['value']);
+      }
     }
     elseif (!empty($this->staticContext['type'])) {
       list(, $entity_type) = explode(':', $this->staticContext['type']);
@@ -200,7 +204,11 @@ abstract class StaticContextFormBase extends FormBase {
     return isset($this->page->getContexts()[$name]);
   }
 
+  public function rebuildSubmit($form, FormStateInterface $form_state){
+    return $form_state->setRebuild();
+  }
+
   public function updateEntityType($form, FormStateInterface $form_state){
-    return $form['selection'];
+    return $form['context']['selection'];
   }
 }
