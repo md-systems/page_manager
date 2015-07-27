@@ -14,6 +14,7 @@ use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Display\VariantBase;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
@@ -186,6 +187,14 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
             'max-age' => $max_age,
           ],
         ];
+
+        // Add cache keys for the passed in context.
+        foreach ($block->getContexts() as $context) {
+          if ($value = $context->getContextValue()) {
+            $block_build['#cache']['keys'][] = $value instanceof EntityInterface ? $value->getEntityTypeId() . '.' . $value->id() : $value;
+          }
+        }
+
         // Build the cache key and a list of all contexts for the whole page.
         $page_cache_keys[] = $block_id;
         $page_cache_contexts = Cache::mergeContexts($page_cache_contexts, $block_build['#cache']['contexts']);
