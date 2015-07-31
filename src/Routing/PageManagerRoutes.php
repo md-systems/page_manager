@@ -42,19 +42,25 @@ class PageManagerRoutes extends RouteSubscriberBase {
    * {@inheritdoc}
    */
   protected function alterRoutes(RouteCollection $collection) {
-    foreach ($this->entityStorage->loadMultiple() as $entity_id => $entity) {
+    $event = past_event_create('so', 'page_manager_routes', 'Page manager Route alter');
+    $pages = $this->entityStorage->loadMultiple();
+    $event->addArgument('pages', array_keys($pages));
+    foreach ($pages as $entity_id => $entity) {
       /** @var $entity \Drupal\page_manager\PageInterface */
 
       // If the page is disabled skip making a route for it.
       if (!$entity->status() || $entity->isFallbackPage()) {
+        $event->addArgument('disabled_' . $entity->id(), $entity->status());
         continue;
       }
 
       // Prepare a route name to use if this is a custom page.
       $route_name = "page_manager.page_view_$entity_id";
 
+
       // Prepare the values that need to be altered for an existing page.
       $path = $entity->getPath();
+      $event->addArgument($route_name, $path);
       $parameters = [
         'page_manager_page' => [
           'type' => 'entity:page',
@@ -69,6 +75,9 @@ class PageManagerRoutes extends RouteSubscriberBase {
         $route_path = RouteCompiler::getPatternOutline($route_path);
 
         if ($path == $route_path) {
+
+          $event->addArgument('remove_' . $route_name, $route_path);
+
           // Adjust the path to translate %placeholders to {slugs}.
           $path = $collection_route->getPath();
 
@@ -104,6 +113,7 @@ class PageManagerRoutes extends RouteSubscriberBase {
           }
         }
         $path = implode('/', $bits);
+        $event->addArgument('final_path_' . $route_name, $path);
       }
 
       // Construct an add a new route.
@@ -124,6 +134,8 @@ class PageManagerRoutes extends RouteSubscriberBase {
       );
       $collection->add($route_name, $route);
     }
+
+    $event->save();
   }
 
   /**
