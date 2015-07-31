@@ -190,7 +190,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
 
         // Add cache keys for the passed in context.
         foreach ((array) $block->getContexts() as $context) {
-          if ($value = $context->getContextValue()) {
+          if ($context->hasContextValue() && $value = $context->getContextValue()) {
             $block_build['#cache']['keys'][] = $value instanceof EntityInterface ? $value->getEntityTypeId() . '.' . $value->id() : $value;
           }
         }
