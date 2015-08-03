@@ -76,7 +76,11 @@ class PageManagerRoutes extends RouteSubscriberBase {
 
         if ($path == $route_path) {
 
-          $event->addArgument('remove_' . $route_name, $route_path);
+          $event->addArgument('remove_' . $route_name, [
+            'route_path' => $route_path,
+            'collection_route_name' => $name,
+            'collection_route' => print_r($collection_route, TRUE),
+          ]);
 
           // Adjust the path to translate %placeholders to {slugs}.
           $path = $collection_route->getPath();
