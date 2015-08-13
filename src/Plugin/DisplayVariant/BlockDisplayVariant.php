@@ -19,6 +19,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
+use Drupal\Core\Render\Element;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Utility\Token;
@@ -239,7 +240,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
     $content = $build['#block_plugin']->build();
     // Remove the block plugin from the render array.
     unset($build['#block_plugin']);
-    if (!empty($content)) {
+    if ($content !== NULL && !Element::isEmpty($content)) {
       $build['content'] = $content;
     }
     else {
