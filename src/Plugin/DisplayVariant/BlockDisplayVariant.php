@@ -245,9 +245,8 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
     // #pre_render callback, so it is guaranteed to already be called within a
     // render context. Hence it is safe to just render the content; it will
     // simply bubble up further.
-    $empty_check_content = $content;
-    \Drupal::service('renderer')->render($empty_check_content);
-    if ($content !== NULL && !empty($empty_check_content['#markup'])) {
+    \Drupal::service('renderer')->render($content);
+    if ($content !== NULL && !empty($content['#markup'])) {
       $build['content'] = $content;
     }
     else {
