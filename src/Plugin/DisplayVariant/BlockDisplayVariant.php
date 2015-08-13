@@ -239,14 +239,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
     $content = $build['#block_plugin']->build();
     // Remove the block plugin from the render array.
     unset($build['#block_plugin']);
-    // The only way to know for a fact that the content returned by the block
-    // plugin's build() method has no content, is to render it because it may
-    // consist of complex render arrays. This method is always invoked by a
-    // #pre_render callback, so it is guaranteed to already be called within a
-    // render context. Hence it is safe to just render the content; it will
-    // simply bubble up further.
-    \Drupal::service('renderer')->render($content);
-    if ($content !== NULL && !empty($content['#markup'])) {
+    if (!empty($content)) {
       $build['content'] = $content;
     }
     else {
