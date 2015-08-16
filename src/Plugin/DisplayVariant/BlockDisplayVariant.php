@@ -13,6 +13,7 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Display\VariantBase;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -252,6 +253,15 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         '#markup' => '',
         '#cache' => $build['#cache'],
       ];
+      // If $content is not empty, then it contains cacheability metadata, and
+      // we must merge it with the existing cacheability metadata. This allows
+      // blocks to be empty, yet still bubble cacheability metadata, to indicate
+      // why they are empty.
+      if (!empty($content)) {
+        CacheableMetadata::createFromRenderArray($build)
+          ->merge(CacheableMetadata::createFromRenderArray($content))
+          ->applyTo($build);
+      }
     }
     return $build;
   }
