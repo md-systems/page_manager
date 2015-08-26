@@ -71,7 +71,7 @@ class PageManagerRoutes extends RouteSubscriberBase {
       // Loop through all existing routes to see if this is overriding a route.
       foreach ($collection->all() as $name => $collection_route) {
         // Find all paths which match the path of the current display.
-        $route_path = RouteCompiler::getPathWithoutDefaults($collection_route);
+        $route_path = $collection_route->getPath();
         $route_path = RouteCompiler::getPatternOutline($route_path);
 
         if ($path == $route_path) {
