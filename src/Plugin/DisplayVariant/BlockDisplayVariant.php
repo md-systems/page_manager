@@ -128,15 +128,13 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    * {@inheritdoc}
    */
   public function build() {
-    $build = [];
-
-    // Default the max page age to permanent.
-    $max_page_age = Cache::PERMANENT;
-
     $page = $this->executable->getPage();
 
     // Set default page cache keys that include the page and display.
-    $page_cache_keys = [
+    // @todo Make the whole display a pre_render callback to fully benefit from
+    //   render caching and avoid to re-calculate contexts and access for all
+    //   blocks.
+    $build['regions']['#cache']['keys'] = [
       'page_manager_page',
       // The page ID.
       $page->id(),
@@ -144,7 +142,9 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       // @todo should have an API for this?
       $this->configuration['uuid'],
     ];
-    $page_cache_contexts = [];
+
+    $cacheability = CacheableMetadata::createFromRenderArray($build['regions'])
+      ->addCacheableDependency($page);
 
     $contexts = $this->getContexts();
     foreach ($this->getRegionAssignments() as $region => $blocks) {
@@ -162,11 +162,11 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         if ($block instanceof ContextAwarePluginInterface) {
           $this->contextHandler()->applyContextMapping($block, $contexts);
         }
-        if (!$block->access($this->account)) {
+        $access = $block->access($this->account, TRUE);
+        $cacheability->addCacheableDependency($access);
+        if (!$access->isAllowed()) {
           continue;
         }
-
-        $max_age = $block->getCacheMaxAge();
 
         $block_build = [
           '#theme' => 'block',
@@ -185,39 +185,25 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
             // invalidations in case of block configuration changes.
             'tags' => Cache::mergeTags($page->getCacheTags(), $block->getCacheTags()),
             'contexts' => $block->getCacheContexts(),
-            'max-age' => $max_age,
+            'max-age' => $block->getCacheMaxAge(),
           ],
         ];
-        // Build the cache key and a list of all contexts for the whole page.
-        $page_cache_keys[] = $block_id;
-        $page_cache_contexts = Cache::mergeContexts($page_cache_contexts, $block_build['#cache']['contexts']);
+
+        // Merge the cacheability metadata of blocks into the page. This helps
+        // to avoid cache redirects if the blocks have more cache contexts than
+        // the page, which the page must respect as well.
+        $cacheability->addCacheableDependency($block);
 
         if (!empty($block_build['#configuration']['label'])) {
           $block_build['#configuration']['label'] = SafeMarkup::checkPlain($block_build['#configuration']['label']);
         }
-
-        // Update the page max age, set it to the lowest max age of all blocks.
-        $max_page_age = Cache::mergeMaxAges($max_age, $max_page_age);
         $build['regions'][$region][$block_id] = $block_build;
       }
     }
 
     $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
 
-    if ($max_page_age !== 0) {
-      // If all blocks of this page can be cached, then the max page age is not
-      // 0. In this case, we additionally cache the whole page, so we need
-      // to fetch fewer caches. Also explicitly provide the cache contexts,
-      // additional contexts might still bubble up from the block content, but
-      // if not, then we save a cache redirection.
-      // We don't have to set those values in case we can't cache all blocks,
-      // as they will bubble up from the blocks.
-      $build['regions']['#cache'] = [
-        'keys' => $page_cache_keys,
-        'contexts' => $page_cache_contexts,
-        'max-age' => $max_page_age,
-      ];
-    }
+    $cacheability->applyTo($build['regions']);
 
     return $build;
   }
