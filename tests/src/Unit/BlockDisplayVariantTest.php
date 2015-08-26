@@ -57,7 +57,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
       ->willReturn(TRUE);
     $this->assertSame(TRUE, $display_variant->access());
   }
-  
+
   /**
    * Tests the build() method when blocks can be cached.
    *
@@ -150,8 +150,8 @@ class BlockDisplayVariantTest extends UnitTestCase {
 
     // The page cacheability metadata contains the access cacheability metadata
     // of accessible and non-accessible blocks. Additionally, the cacheability
-    // metadata is accessible blocks is merged into to avoid cache redirects
-    // when possible.
+    // metadata of accessible blocks is merged to avoid cache redirects when
+    // possible.
     $expected_cache_page = [
       'keys' => ['page_manager_page', 'page_id', 'UUID'],
       'contexts' => ['url', 'user', 'user.permissions'],
