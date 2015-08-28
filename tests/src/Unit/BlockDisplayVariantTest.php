@@ -59,6 +59,55 @@ class BlockDisplayVariantTest extends UnitTestCase {
   }
 
   /**
+   * Tests the build() method when a block is empty.
+   *
+   * @covers ::build
+   */
+  public function testBuildEmptyBlock() {
+    $account = $this->prophesize(AccountInterface::class);
+    $block1 = $this->prophesize(BlockPluginInterface::class);
+    $block1->access($account)->willReturn(TRUE);
+
+    // Building a block with empty content.
+    $block1->build()->willReturn(['#cache' => [ 'tags' => [ 0 => 'tag_to_be_merged']]]);
+
+    $context_handler = $this->prophesize(ContextHandlerInterface::class);
+    $uuid_generator = $this->prophesize(UuidInterface::class);
+    $token = $this->prophesize(Token::class);
+
+    $display_variant = new BlockDisplayVariant([], '', [], $context_handler->reveal(), $account->reveal(), $uuid_generator->reveal(), $token->reveal());
+
+    // Empty block.
+    $expected_build = [
+      '#markup' => '',
+      '#cache' => [
+        'tags' => [
+          'block_plugin:block_plugin_id',
+          'page:page_id',
+          'tag_to_be_merged',
+        ],
+        'contexts' => [],
+        'max-age' => -1,
+      ],
+    ];
+
+    $build = [
+      '#block_plugin' => $block1->reveal(),
+      '#cache' => [
+        'tags' => [
+          'page:page_id',
+          'block_plugin:block_plugin_id',
+        ],
+      ],
+    ];
+
+    $build = $display_variant->buildBlock($build);
+
+    // Assert that cacheability metadata is merged.
+    $this->assertSame($expected_build, $build);
+  }
+
+  /**
    * Tests the build() method when blocks can be cached.
    *
    * @covers ::build
@@ -173,55 +222,6 @@ class BlockDisplayVariantTest extends UnitTestCase {
     ]);
     $block1_build = $display_variant->buildBlock($build['regions']['top']['block1']);
     $this->assertSame(['#markup' => 'block1_build_value'], $block1_build['content']);
-  }
-
-  /**
-   * Tests the build() method when a block is empty.
-   *
-   * @covers ::build
-   */
-  public function testBuildEmptyBlock() {
-    $account = $this->prophesize(AccountInterface::class);
-    $block1 = $this->prophesize(BlockPluginInterface::class);
-    $block1->access($account)->willReturn(TRUE);
-
-    // Building a block with empty content.
-    $block1->build()->willReturn(['#cache' => [ 'tags' => [ 0 => 'tag_to_be_merged']]]);
-
-    $context_handler = $this->prophesize(ContextHandlerInterface::class);
-    $uuid_generator = $this->prophesize(UuidInterface::class);
-    $token = $this->prophesize(Token::class);
-
-    $display_variant = new BlockDisplayVariant([], '', [], $context_handler->reveal(), $account->reveal(), $uuid_generator->reveal(), $token->reveal());
-
-    // Empty block.
-    $expected_build = [
-      '#markup' => '',
-      '#cache' => [
-        'tags' => [
-          'block_plugin:block_plugin_id',
-          'page:page_id',
-          'tag_to_be_merged',
-        ],
-        'contexts' => [],
-        'max-age' => -1,
-      ],
-    ];
-
-    $build = [
-      '#block_plugin' => $block1->reveal(),
-      '#cache' => [
-        'tags' => [
-          'page:page_id',
-          'block_plugin:block_plugin_id',
-        ],
-      ],
-    ];
-
-    $build = $display_variant->buildBlock($build);
-
-    // Assert that cacheability metadata is merged.
-    $this->assertSame($expected_build, $build);
   }
 
   /**
