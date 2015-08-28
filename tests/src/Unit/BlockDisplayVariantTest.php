@@ -202,7 +202,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
     // metadata of accessible blocks is merged to avoid cache redirects when
     // possible.
     $expected_cache_page = [
-      'keys' => ['page_manager_page', 'page_id', 'UUID'],
+      //'keys' => ['page_manager_page', 'page_id', 'UUID'],
       'contexts' => ['url', 'user', 'user.permissions'],
       'tags' => ['block_plugin1:block_plugin_id', 'page:page_id'],
       'max-age' => 3600,
@@ -211,16 +211,17 @@ class BlockDisplayVariantTest extends UnitTestCase {
     // Build the variant and ensure that pre_render is set only for the first
     // block.
     $build = $display_variant->build();
-    $this->assertSame([$display_variant, 'buildBlock'], $build['regions']['top']['block1']['#pre_render'][0]);
-    $this->assertTrue(empty($build['regions']['top']['block2']));
-    $this->assertSame($expected_cache_block1, $build['regions']['top']['block1']['#cache']);
-    $this->assertSame($expected_cache_page, $build['regions']['#cache']);
+    $build = $display_variant->buildRegions($build);
+    $this->assertSame([$display_variant, 'buildBlock'], $build['top']['block1']['#pre_render'][0]);
+    $this->assertTrue(empty($build['top']['block2']));
+    $this->assertSame($expected_cache_block1, $build['top']['block1']['#cache']);
+    $this->assertSame($expected_cache_page, $build['#cache']);
 
     // Ensure that building the block returns the correct markup.
     $block1->build()->willReturn([
       '#markup' => 'block1_build_value',
     ]);
-    $block1_build = $display_variant->buildBlock($build['regions']['top']['block1']);
+    $block1_build = $display_variant->buildBlock($build['top']['block1']);
     $this->assertSame(['#markup' => 'block1_build_value'], $block1_build['content']);
   }
 

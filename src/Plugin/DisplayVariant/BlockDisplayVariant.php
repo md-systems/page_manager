@@ -129,11 +129,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
    */
   public function build() {
     $page = $this->executable->getPage();
-
     // Set default page cache keys that include the page and display.
-    // @todo Make the whole display a pre_render callback to fully benefit from
-    //   render caching and avoid to re-calculate contexts and access for all
-    //   blocks.
     $build['regions']['#cache']['keys'] = [
       'page_manager_page',
       // The page ID.
@@ -142,8 +138,17 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       // @todo should have an API for this?
       $this->configuration['uuid'],
     ];
+    $build['#pre_render'][] = [$this, 'buildRegions'];
+    return $build;
+  }
 
-    $cacheability = CacheableMetadata::createFromRenderArray($build['regions'])
+  /**
+   * #pre_render callback for building the regions.
+   */
+  public function buildRegions(array $build) {
+    $page = $this->executable->getPage();
+
+    $cacheability = CacheableMetadata::createFromRenderArray($build)
       ->addCacheableDependency($page);
 
     $contexts = $this->getContexts();
@@ -153,8 +158,8 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
       }
 
       $region_name = Html::getClass("block-region-$region");
-      $build['regions'][$region]['#prefix'] = '<div class="' . $region_name . '">';
-      $build['regions'][$region]['#suffix'] = '</div>';
+      $build[$region]['#prefix'] = '<div class="' . $region_name . '">';
+      $build[$region]['#suffix'] = '</div>';
 
       /** @var $blocks \Drupal\Core\Block\BlockPluginInterface[] */
       $weight = 0;
@@ -197,13 +202,13 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
         if (!empty($block_build['#configuration']['label'])) {
           $block_build['#configuration']['label'] = SafeMarkup::checkPlain($block_build['#configuration']['label']);
         }
-        $build['regions'][$region][$block_id] = $block_build;
+        $build[$region][$block_id] = $block_build;
       }
     }
 
     $build['#title'] = $this->renderPageTitle($this->configuration['page_title']);
 
-    $cacheability->applyTo($build['regions']);
+    $cacheability->applyTo($build);
 
     return $build;
   }
