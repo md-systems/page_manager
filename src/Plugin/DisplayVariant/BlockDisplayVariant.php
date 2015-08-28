@@ -130,7 +130,7 @@ class BlockDisplayVariant extends VariantBase implements ContextAwareVariantInte
   public function build() {
     $page = $this->executable->getPage();
     // Set default page cache keys that include the page and display.
-    $build['regions']['#cache']['keys'] = [
+    $build['#cache']['keys'] = [
       'page_manager_page',
       // The page ID.
       $page->id(),

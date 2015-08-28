@@ -202,7 +202,7 @@ class BlockDisplayVariantTest extends UnitTestCase {
     // metadata of accessible blocks is merged to avoid cache redirects when
     // possible.
     $expected_cache_page = [
-      //'keys' => ['page_manager_page', 'page_id', 'UUID'],
+      'keys' => ['page_manager_page', 'page_id', 'UUID'],
       'contexts' => ['url', 'user', 'user.permissions'],
       'tags' => ['block_plugin1:block_plugin_id', 'page:page_id'],
       'max-age' => 3600,
