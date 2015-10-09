@@ -18,7 +18,7 @@ abstract class SelectionConditionFormBase extends ConditionFormBase {
   /**
    * The display variant.
    *
-   * @var \Drupal\page_manager\Plugin\ConditionVariantInterface
+   * @var \Drupal\ctools\Plugin\ConditionVariantInterface
    */
   protected $displayVariant;
 

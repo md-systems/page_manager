@@ -15,7 +15,6 @@ use Drupal\page_manager\Event\PageManagerContextEvent;
 use Drupal\page_manager\Event\PageManagerEvents;
 use Drupal\page_manager\PageExecutable;
 use Drupal\page_manager\PageInterface;
-use Drupal\page_manager\Plugin\PageAwareVariantInterface;
 use Drupal\Tests\UnitTestCase;
 use Prophecy\Argument;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -64,10 +63,8 @@ class PageExecutableTest extends UnitTestCase {
     $display_variant1 = $this->prophesize(VariantInterface::class);
     $display_variant1->access()->willReturn(FALSE);
 
-    $display_variant2 = $this->prophesize(PageAwareVariantInterface::class);
+    $display_variant2 = $this->prophesize(VariantInterface::class);
     $display_variant2->access()->willReturn(TRUE);
-    $display_variant2->setExecutable($this->exectuable)
-      ->willReturn($display_variant2->reveal());
 
     $this->page->getVariants()->willReturn([
       'variant1' => $display_variant1->reveal(),

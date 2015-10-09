@@ -27,7 +27,7 @@ class PageDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('page_manager.page_list');
+    return new Url('entity.page.collection');
   }
 
   /**

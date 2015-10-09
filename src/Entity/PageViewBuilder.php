@@ -7,6 +7,7 @@
 
 namespace Drupal\page_manager\Entity;
 
+use Drupal\Core\Cache\RefinableCacheableDependencyInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityViewBuilder;
 
@@ -20,8 +21,11 @@ class PageViewBuilder extends EntityViewBuilder {
    */
   public function view(EntityInterface $entity, $view_mode = 'full', $langcode = NULL) {
     $build = [];
-    /** @var $entity \Drupal\page_manager\PageInterface */
+    /** @var \Drupal\page_manager\PageInterface $entity */
     if ($display_variant = $entity->getExecutable()->selectDisplayVariant()) {
+      if ($display_variant instanceof RefinableCacheableDependencyInterface) {
+        $display_variant->addCacheableDependency($entity);
+      }
       $build = $display_variant->build();
     }
     return $build;

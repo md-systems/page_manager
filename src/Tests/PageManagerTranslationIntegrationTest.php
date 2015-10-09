@@ -19,7 +19,7 @@ class PageManagerTranslationIntegrationTest extends ContentTranslationTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['page_manager', 'node', 'content_translation'];
+  public static $modules = ['block', 'page_manager', 'node', 'content_translation'];
 
   /**
    * {@inheritdoc}
@@ -50,6 +50,9 @@ class PageManagerTranslationIntegrationTest extends ContentTranslationTestBase {
    * Tests that overriding the node page does not prevent translation.
    */
   public function testNode() {
+    $this->drupalPlaceBlock('local_tasks_block');
+    $this->drupalPlaceBlock('page_title_block');
+
     $node = $this->drupalCreateNode(['type' => 'article']);
     $this->drupalGet('node/' . $node->id());
     $this->assertResponse(200);

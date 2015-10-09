@@ -45,6 +45,7 @@ use Drupal\page_manager\Plugin\VariantAwareTrait;
  *     "access_conditions",
  *   },
  *   links = {
+ *     "collection" = "/admin/structure/page_manager",
  *     "add-form" = "/admin/structure/page_manager/add",
  *     "edit-form" = "/admin/structure/page_manager/manage/{page}",
  *     "delete-form" = "/admin/structure/page_manager/manage/{page}/delete",

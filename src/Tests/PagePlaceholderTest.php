@@ -37,6 +37,7 @@ class PagePlaceholderTest extends WebTestBase {
     $page_string = 'test-page';
     $this->drupalGet('page-manager-test/' . $page_string);
     $this->assertResponse(200);
+    $this->assertCacheTag('page_manager_route_name:page_manager_test.page_view');
     $this->assertText('Hello World! Page ' . $page_string);
 
     // Create a new page entity with the same path as in the test module.
@@ -52,6 +53,7 @@ class PagePlaceholderTest extends WebTestBase {
     // Access the page callback again and check that now the text is not there.
     $this->drupalGet('page-manager-test/' . $page_string);
     $this->assertResponse(200);
+    $this->assertCacheTag('page_manager_route_name:page_manager_test.page_view');
     $this->assertNoText('Hello World! Page ' . $page_string);
   }
 

@@ -8,12 +8,11 @@
 namespace Drupal\page_manager\Controller;
 
 use Drupal\Component\Plugin\PluginManagerInterface;
-use Drupal\Component\Serialization\Json;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Block\BlockManagerInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
 use Drupal\Core\Url;
+use Drupal\ctools\Form\AjaxFormTrait;
 use Drupal\page_manager\PageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +21,8 @@ use Symfony\Component\HttpFoundation\Request;
  * Provides route controllers for Page Manager.
  */
 class PageManagerController extends ControllerBase {
+
+  use AjaxFormTrait;
 
   /**
    * The block manager.
@@ -33,7 +34,7 @@ class PageManagerController extends ControllerBase {
   /**
    * The condition manager.
    *
-   * @var \Drupal\Component\Plugin\PluginManagerInterface
+   * @var \Drupal\Core\Plugin\Context\ContextAwarePluginManagerInterface
    */
   protected $conditionManager;
 
@@ -141,7 +142,7 @@ class PageManagerController extends ControllerBase {
    *   The title for the selection condition edit form.
    */
   public function editSelectionConditionTitle(PageInterface $page, $display_variant_id, $condition_id) {
-    /** @var \Drupal\page_manager\Plugin\ConditionVariantInterface $display_variant */
+    /** @var \Drupal\ctools\Plugin\ConditionVariantInterface $display_variant */
     $display_variant = $page->getVariant($display_variant_id);
     $selection_condition = $display_variant->getSelectionCondition($condition_id);
     return $this->t('Edit %label selection condition', ['%label' => $selection_condition->getPluginDefinition()['label']]);
@@ -184,7 +185,7 @@ class PageManagerController extends ControllerBase {
       drupal_set_message($this->t('The %label page has been disabled.', ['%label' => $page->label()]));
     }
 
-    return $this->redirect('page_manager.page_list');
+    return $this->redirect('entity.page.collection');
   }
 
   /**
@@ -208,13 +209,7 @@ class PageManagerController extends ControllerBase {
           'page' => $page->id(),
           'display_variant_id' => $display_variant_id,
         ]),
-        'attributes' => [
-          'class' => ['use-ajax'],
-          'data-dialog-type' => 'modal',
-          'data-dialog-options' => Json::encode([
-            'width' => 'auto',
-          ]),
-        ],
+        'attributes' => $this->getAjaxAttributes(),
       ];
     }
     return $build;
@@ -242,13 +237,7 @@ class PageManagerController extends ControllerBase {
           'page' => $page->id(),
           'condition_id' => $access_id,
         ]),
-        'attributes' => [
-          'class' => ['use-ajax'],
-          'data-dialog-type' => 'modal',
-          'data-dialog-options' => Json::encode([
-            'width' => 'auto',
-          ]),
-        ],
+        'attributes' => $this->getAjaxAttributes(),
       ];
     }
     return $build;
@@ -279,13 +268,7 @@ class PageManagerController extends ControllerBase {
           'display_variant_id' => $display_variant_id,
           'condition_id' => $selection_id,
         ]),
-        'attributes' => [
-          'class' => ['use-ajax'],
-          'data-dialog-type' => 'modal',
-          'data-dialog-options' => Json::encode([
-            'width' => 'auto',
-          ]),
-        ],
+        'attributes' => $this->getAjaxAttributes(),
       ];
     }
     return $build;
@@ -317,7 +300,7 @@ class PageManagerController extends ControllerBase {
     $available_plugins = $this->blockManager->getDefinitionsForContexts($page->getContexts());
     foreach ($available_plugins as $plugin_id => $plugin_definition) {
       // Make a section for each region.
-      $category = SafeMarkup::checkPlain($plugin_definition['category']);
+      $category = $plugin_definition['category'];
       $category_key = 'category-' . $category;
       if (!isset($build[$category_key])) {
         $build[$category_key] = [
@@ -337,13 +320,7 @@ class PageManagerController extends ControllerBase {
           'block_id' => $plugin_id,
           'region' => $request->query->get('region'),
         ]),
-        'attributes' => [
-          'class' => ['use-ajax'],
-          'data-dialog-type' => 'modal',
-          'data-dialog-options' => Json::encode([
-            'width' => 'auto',
-          ]),
-        ],
+        'attributes' => $this->getAjaxAttributes(),
       ];
     }
     return $build;

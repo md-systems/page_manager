@@ -30,7 +30,7 @@ class PageConfigSchemaTest extends KernelTestBase {
    */
   public function testValidPageConfigSchema() {
     $id = strtolower($this->randomMachineName());
-    /** @var $page \Drupal\page_manager\PageInterface */
+    /** @var \Drupal\page_manager\PageInterface $page */
     $page = Page::create([
       'id' => $id,
       'label' => $this->randomMachineName(),
@@ -54,7 +54,7 @@ class PageConfigSchemaTest extends KernelTestBase {
       'id' => 'block_display',
       'label' => 'Block page',
     ]);
-    /** @var $display_variant \Drupal\page_manager\Plugin\DisplayVariant\BlockDisplayVariant */
+    /** @var \Drupal\page_manager\Plugin\DisplayVariant\PageBlockDisplayVariant $display_variant */
     $display_variant = $page->getVariant($display_variant_id);
 
     // Add a selection condition.

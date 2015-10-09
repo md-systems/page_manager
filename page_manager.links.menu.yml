@@ -1,5 +1,5 @@
-page_manager.page_list:
+entity.page.collection:
   title: 'Pages'
   parent: system.admin_structure
   description: 'Manage pages.'
-  route_name: page_manager.page_list
+  route_name: entity.page.collection

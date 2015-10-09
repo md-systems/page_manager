@@ -7,7 +7,7 @@
 
 namespace Drupal\page_manager\Tests;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Url;
 use Drupal\page_manager\Entity\Page;
 use Drupal\simpletest\WebTestBase;
@@ -27,13 +27,18 @@ class PageManagerAdminTest extends WebTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['page_manager', 'page_manager_test'];
+  public static $modules = ['block', 'page_manager', 'page_manager_test'];
 
   /**
    * {@inheritdoc}
    */
   protected function setUp() {
     parent::setUp();
+
+    $this->drupalPlaceBlock('local_tasks_block');
+    $this->drupalPlaceBlock('local_actions_block');
+    $this->drupalPlaceBlock('system_branding_block');
+    $this->drupalPlaceBlock('page_title_block');
 
     \Drupal::service('theme_handler')->install(['bartik', 'classy']);
     $this->config('system.theme')->set('admin', 'classy')->save();
@@ -60,6 +65,7 @@ class PageManagerAdminTest extends WebTestBase {
     $this->doTestEditBlock();
     $this->doTestExistingPathWithoutParameters();
     $this->doTestDeletePage();
+    $this->doTestExistingRoutes();
   }
 
   /**
@@ -82,7 +88,7 @@ class PageManagerAdminTest extends WebTestBase {
     // Add a new page with a label.
     $edit += ['label' => 'Foo'];
     $this->drupalPostForm(NULL, $edit, 'Save');
-    $this->assertRaw(SafeMarkup::format('The %label page has been added.', ['%label' => 'Foo']));
+    $this->assertRaw(new FormattableMarkup('The %label page has been added.', ['%label' => 'Foo']));
 
     // Test that it is available immediately.
     $this->drupalGet('admin/foo');
@@ -131,13 +137,12 @@ class PageManagerAdminTest extends WebTestBase {
     // Add a new display variant.
     $this->clickLink('Add new display variant');
     $this->clickLink('Block page');
-    $this->assertFieldByName("display_variant[page_title]", 'Foo', 'Default page title "Foo" was taken from page label.');
     $edit = [
       'display_variant[label]' => 'First',
       'display_variant[page_title]' => 'Example title',
     ];
     $this->drupalPostForm(NULL, $edit, 'Add display variant');
-    $this->assertRaw(SafeMarkup::format('The %label display variant has been added.', ['%label' => 'First']));
+    $this->assertRaw(new FormattableMarkup('The %label display variant has been added.', ['%label' => 'First']));
 
     // Test that the variant is still used but empty.
     $this->drupalGet('admin/foo');
@@ -223,7 +228,7 @@ class PageManagerAdminTest extends WebTestBase {
       $form_name . '[weight]' => -10,
     ];
     $this->drupalPostForm(NULL, $edit, 'Update display variant');
-    $this->assertRaw(SafeMarkup::format('The %label display variant has been updated.', ['%label' => 'First']));
+    $this->assertRaw(new FormattableMarkup('The %label display variant has been updated.', ['%label' => 'First']));
     $this->clickLink('Edit');
     $this->assertOptionSelected('edit-display-variant-blocks-' . $block_config['uuid'] . '-region', 'bottom');
     $this->assertOptionSelected('edit-display-variant-blocks-' . $block_config['uuid'] . '-weight', -10);
@@ -293,9 +298,9 @@ class PageManagerAdminTest extends WebTestBase {
   protected function doTestRemoveDisplayVariant() {
     $this->drupalGet('admin/structure/page_manager/manage/foo');
     $this->clickLink('Delete');
-    $this->assertRaw(SafeMarkup::format('Are you sure you want to delete the display variant %label?', ['%label' => 'Default']));
+    $this->assertRaw(new FormattableMarkup('Are you sure you want to delete the display variant %label?', ['%label' => 'Default']));
     $this->drupalPostForm(NULL, [], 'Delete');
-    $this->assertRaw(SafeMarkup::format('The display variant %label has been removed.', ['%label' => 'Default']));
+    $this->assertRaw(new FormattableMarkup('The display variant %label has been removed.', ['%label' => 'Default']));
   }
 
   /**
@@ -316,9 +321,9 @@ class PageManagerAdminTest extends WebTestBase {
     $this->drupalGet('admin/structure/page_manager/manage/foo');
     $this->clickLink('Edit');
     $this->clickLink('Delete');
-    $this->assertRaw(SafeMarkup::format('Are you sure you want to delete the block %label?', ['%label' => 'Updated block label']));
+    $this->assertRaw(new FormattableMarkup('Are you sure you want to delete the block %label?', ['%label' => 'Updated block label']));
     $this->drupalPostForm(NULL, [], 'Delete');
-    $this->assertRaw(SafeMarkup::format('The block %label has been removed.', ['%label' => 'Updated block label']));
+    $this->assertRaw(new FormattableMarkup('The block %label has been removed.', ['%label' => 'Updated block label']));
 
     // Assert that the block is now gone.
     $this->drupalGet('admin/foo');
@@ -385,7 +390,7 @@ class PageManagerAdminTest extends WebTestBase {
     $this->drupalGet('admin/structure/page_manager');
     $this->clickLink('Delete');
     $this->drupalPostForm(NULL, [], 'Delete');
-    $this->assertRaw(SafeMarkup::format('The page %name has been removed.', ['%name' => 'existing']));
+    $this->assertRaw(new FormattableMarkup('The page %name has been removed.', ['%name' => 'existing']));
     $this->drupalGet('admin');
     // The overridden page is back to its default.
     $this->assertResponse(200);
@@ -393,10 +398,31 @@ class PageManagerAdminTest extends WebTestBase {
     $this->drupalGet('admin/structure/page_manager');
     $this->clickLink('Delete');
     $this->drupalPostForm(NULL, [], 'Delete');
-    $this->assertRaw(SafeMarkup::format('The page %name has been removed.', ['%name' => 'Foo']));
+    $this->assertRaw(new FormattableMarkup('The page %name has been removed.', ['%name' => 'Foo']));
     $this->drupalGet('admin/foo');
     // The custom page is no longer found.
     $this->assertResponse(404);
+  }
+
+  /**
+   * Tests that default arguments are not removed from existing routes.
+   */
+  public function doTestExistingRoutes() {
+
+    // Test that the page without placeholder is accessible.
+    $edit = [
+      'label' => 'Placeholder test 2',
+      'id' => 'placeholder2',
+      'path' => '/page-manager-test',
+    ];
+    $this->drupalPostForm('admin/structure/page_manager/add', $edit, 'Save');
+    $this->drupalGet('page-manager-test');
+    $this->assertResponse(404);
+
+    // Test that the page test is accessible.
+    $page_string = 'test-page';
+    $this->drupalGet('page-manager-test/' . $page_string);
+    $this->assertResponse(200);
   }
 
   /**
@@ -408,7 +434,7 @@ class PageManagerAdminTest extends WebTestBase {
   protected function assertTheme($theme_name) {
     $url = Url::fromUri('base:core/themes/' . $theme_name . '/logo.svg', ['absolute' => TRUE])->toString();
     $elements = $this->xpath('//img[@src=:url]', [':url' => $url]);
-    $this->assertEqual(count($elements), 1, SafeMarkup::format('Page is rendered in @theme', ['@theme' => $theme_name]));
+    $this->assertEqual(count($elements), 1, new FormattableMarkup('Page is rendered in @theme', ['@theme' => $theme_name]));
   }
 
   /**
@@ -426,9 +452,9 @@ class PageManagerAdminTest extends WebTestBase {
    */
   protected function findBlockByLabel($page_id, $display_variant_label, $block_label) {
     if ($display_variant = $this->findDisplayVariantByLabel($page_id, $display_variant_label)) {
-      /** @var $display_variant \Drupal\page_manager\Plugin\BlockVariantInterface */
+      /** @var \Drupal\ctools\Plugin\BlockVariantInterface $display_variant */
       foreach ($display_variant->getRegionAssignments() as $blocks) {
-        /** @var $blocks \Drupal\Core\Block\BlockPluginInterface[] */
+        /** @var \Drupal\Core\Block\BlockPluginInterface[] $blocks */
         foreach ($blocks as $block) {
           if ($block->label() == $block_label) {
             return $block;
@@ -452,7 +478,7 @@ class PageManagerAdminTest extends WebTestBase {
    */
   protected function findDisplayVariantByLabel($page_id, $display_variant_label) {
     if ($page = Page::load($page_id)) {
-      /** @var $page \Drupal\page_manager\PageInterface */
+      /** @var \Drupal\page_manager\PageInterface $page */
       foreach ($page->getVariants() as $display_variant) {
         if ($display_variant->label() == $display_variant_label) {
           return $display_variant;

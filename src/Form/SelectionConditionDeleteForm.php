@@ -8,9 +8,9 @@
 namespace Drupal\page_manager\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\page_manager\PageInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Url;
+use Drupal\page_manager\PageInterface;
 
 /**
  * @todo.
@@ -27,7 +27,7 @@ class SelectionConditionDeleteForm extends ConfirmFormBase {
   /**
    * The display variant.
    *
-   * @var \Drupal\page_manager\Plugin\ConditionVariantInterface
+   * @var \Drupal\ctools\Plugin\ConditionVariantInterface
    */
   protected $displayVariant;
 

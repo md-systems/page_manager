@@ -7,10 +7,12 @@
 
 namespace Drupal\page_manager\Routing;
 
+use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Routing\RouteCompiler;
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\Core\Routing\RoutingEvents;
+use Drupal\page_manager\PageInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
@@ -29,13 +31,23 @@ class PageManagerRoutes extends RouteSubscriberBase {
   protected $entityStorage;
 
   /**
+   * The cache tags invalidator.
+   *
+   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface
+   */
+  protected $cacheTagsInvalidator;
+
+  /**
    * Constructs a new PageManagerRoutes.
    *
    * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    *   The entity manager.
+   * @param \Drupal\Core\Cache\CacheTagsInvalidatorInterface $cache_tags_invalidator
+   *   The cache tags invalidator.
    */
-  public function __construct(EntityManagerInterface $entity_manager) {
+  public function __construct(EntityManagerInterface $entity_manager, CacheTagsInvalidatorInterface $cache_tags_invalidator) {
     $this->entityStorage = $entity_manager->getStorage('page');
+    $this->cacheTagsInvalidator = $cache_tags_invalidator;
   }
 
   /**
@@ -43,52 +55,37 @@ class PageManagerRoutes extends RouteSubscriberBase {
    */
   protected function alterRoutes(RouteCollection $collection) {
     foreach ($this->entityStorage->loadMultiple() as $entity_id => $entity) {
-      /** @var $entity \Drupal\page_manager\PageInterface */
+      /** @var \Drupal\page_manager\PageInterface $entity */
 
       // If the page is disabled skip making a route for it.
       if (!$entity->status() || $entity->isFallbackPage()) {
         continue;
       }
 
-      // Prepare a route name to use if this is a custom page.
-      $route_name = "page_manager.page_view_$entity_id";
-
       // Prepare the values that need to be altered for an existing page.
-      $path = $entity->getPath();
       $parameters = [
         'page_manager_page' => [
           'type' => 'entity:page',
         ],
       ];
 
-      $altered_route = FALSE;
-      // Loop through all existing routes to see if this is overriding a route.
-      foreach ($collection->all() as $name => $collection_route) {
-        // Find all paths which match the path of the current display.
-        $route_path = RouteCompiler::getPathWithoutDefaults($collection_route);
-        $route_path = RouteCompiler::getPatternOutline($route_path);
-
-        if ($path == $route_path) {
-          // Adjust the path to translate %placeholders to {slugs}.
-          $path = $collection_route->getPath();
-
-          // Merge in any route parameter definitions.
-          $parameters += $collection_route->getOption('parameters') ?: [];
-
-          $altered_route = TRUE;
-
-          // Update the route name this will be added to.
-          $route_name = $name;
-          // Remove the existing route.
-          $collection->remove($route_name);
-          break;
-        }
-      }
-
       $arguments = [];
-      // Replace % placeholders with proper route slugs ("{arg}") and set
-      // parameter types.
-      if (!$altered_route) {
+
+      if ($route_name = $this->findPageRouteName($entity, $collection)) {
+        $this->cacheTagsInvalidator->invalidateTags(["page_manager_route_name:$route_name"]);
+
+        $collection_route = $collection->get($route_name);
+        $path = $collection_route->getPath();
+        $parameters += $collection_route->getOption('parameters') ?: [];
+
+        $collection->remove($route_name);
+      }
+      else {
+        $route_name = "page_manager.page_view_$entity_id";
+        $path = $entity->getPath();
+
+        // Replace % placeholders with proper route slugs ("{arg}") and set
+        // parameter types.
         $bits = explode('/', $path);
         $arg_counter = 0;
         foreach ($bits as $pos => $bit) {
@@ -102,9 +99,10 @@ class PageManagerRoutes extends RouteSubscriberBase {
               'type' => $type,
             ];
           }
-        }
         $path = implode('/', $bits);
+        }
       }
+
 
       // Construct an add a new route.
       $route = new Route(
@@ -123,6 +121,35 @@ class PageManagerRoutes extends RouteSubscriberBase {
         ]
       );
       $collection->add($route_name, $route);
+    }
+  }
+
+  /**
+   * Finds the overridden route name.
+   *
+   * @param \Drupal\page_manager\PageInterface $entity
+   *   The page entity.
+   * @param \Symfony\Component\Routing\RouteCollection $collection
+   *   The route collection.
+   *
+   * @return string|null
+   *   Either the route name if this is overriding an existing path, or NULL.
+   */
+  protected function findPageRouteName(PageInterface $entity, RouteCollection $collection) {
+    // Get the stored page path.
+    $path = $entity->getPath();
+
+    // Loop through all existing routes to see if this is overriding a route.
+    foreach ($collection->all() as $name => $collection_route) {
+      // Find all paths which match the path of the current display.
+      $route_path = $collection_route->getPath();
+      $route_path_outline = RouteCompiler::getPatternOutline($route_path);
+
+      // Match either the path or the outline, e.g., '/foo/{foo}' or '/foo/%'.
+      if ($path === $route_path || $path === $route_path_outline) {
+        // Return the overridden route name.
+        return $name;
+      }
     }
   }
 

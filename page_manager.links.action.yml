@@ -2,4 +2,4 @@ entity.page.add_form:
   route_name: entity.page.add_form
   title: 'Add page'
   appears_on:
-    - 'page_manager.page_list'
+    - 'entity.page.collection'

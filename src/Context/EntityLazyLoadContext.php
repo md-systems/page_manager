@@ -47,11 +47,11 @@ class EntityLazyLoadContext extends Context {
    * {@inheritdoc}
    */
   public function getContextValue() {
-    if (!$this->contextValue) {
+    if (!$this->contextData) {
       $entity_type_id = substr($this->contextDefinition->getDataType(), 7);
-      $this->contextValue = $this->entityManager->loadEntityByUuid($entity_type_id, $this->uuid);
+      $this->setContextValue($this->entityManager->loadEntityByUuid($entity_type_id, $this->uuid));
     }
-    return $this->contextValue;
+    return parent::getContextValue();
   }
 
   /**
@@ -59,7 +59,7 @@ class EntityLazyLoadContext extends Context {
    */
   public function hasContextValue() {
     // Ensure that the entity is loaded before checking if it exists.
-    if (!$this->contextValue) {
+    if (!$this->contextData) {
       $this->getContextValue();
     }
     return parent::hasContextValue();

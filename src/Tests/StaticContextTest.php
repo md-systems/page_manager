@@ -29,6 +29,8 @@ class StaticContextTest extends WebTestBase {
 
     $this->drupalCreateContentType(['type' => 'article', 'name' => 'Article']);
     $this->drupalLogin($this->drupalCreateUser(['administer pages', 'create article content']));
+
+    $this->drupalPlaceBlock('page_title_block');
   }
 
   /**

@@ -31,8 +31,8 @@ class PageListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    /** @var $entity \Drupal\page_manager\PageInterface */
-    $row['label'] = $this->getLabel($entity);
+    /** @var \Drupal\page_manager\PageInterface $entity */
+    $row['label'] = $entity->label();
     $row['id'] = $entity->id();
     $row['path'] = $this->getPath($entity);
 
@@ -71,7 +71,7 @@ class PageListBuilder extends ConfigEntityListBuilder {
    */
   public function render() {
     $build = parent::render();
-    $build['table']['#empty'] = $this->t('There are currently no pages. <a href="@url">Add a new page.</a>', ['@url' => Url::fromRoute('entity.page.add_form')->toString()]);
+    $build['table']['#empty'] = $this->t('There are currently no pages. <a href=":url">Add a new page.</a>', [':url' => Url::fromRoute('entity.page.add_form')->toString()]);
     return $build;
   }
 }

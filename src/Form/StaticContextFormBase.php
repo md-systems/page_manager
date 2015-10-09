@@ -178,6 +178,8 @@ abstract class StaticContextFormBase extends FormBase {
   /**
    * Get the entity from the selection.
    *
+   * @param string $entity_type
+   *   The entity type ID.
    * @param string $selection
    *   The value from the selection box.
    *

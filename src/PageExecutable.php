@@ -8,10 +8,9 @@
 namespace Drupal\page_manager;
 
 use Drupal\Component\Plugin\Context\ContextInterface;
+use Drupal\Core\Display\ContextAwareVariantInterface;
 use Drupal\page_manager\Event\PageManagerContextEvent;
 use Drupal\page_manager\Event\PageManagerEvents;
-use Drupal\page_manager\Plugin\ContextAwareVariantInterface;
-use Drupal\page_manager\Plugin\PageAwareVariantInterface;
 
 /**
  * Represents a page entity during runtime execution.
@@ -66,9 +65,6 @@ class PageExecutable implements PageExecutableInterface {
           $display_variant->setContexts($this->getContexts());
         }
         if ($display_variant->access()) {
-          if ($display_variant instanceof PageAwareVariantInterface) {
-            $display_variant->setExecutable($this);
-          }
           $this->selectedDisplayVariant = $display_variant;
           break;
         }

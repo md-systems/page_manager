@@ -77,16 +77,19 @@ class RouteParamContext implements EventSubscriberInterface {
         }
 
         $context_name = $this->t('{@name} from route', ['@name' => $route_context_name]);
-        $context = new Context(new ContextDefinition($route_context['type'], $context_name, FALSE));
         if ($request->attributes->has($route_context_name)) {
-          $context->setContextValue($request->attributes->get($route_context_name));
-          $cacheability = new CacheableMetadata();
-          $cacheability->setCacheContexts(['route']);
-          $context->addCacheableDependency($cacheability);
+          $value = $request->attributes->get($route_context_name);
         }
         else {
           // @todo Find a way to add in a fake value for configuration.
+          $value = NULL;
         }
+        $cacheability = new CacheableMetadata();
+        $cacheability->setCacheContexts(['route']);
+
+        $context = new Context(new ContextDefinition($route_context['type'], $context_name, FALSE), $value);
+        $context->addCacheableDependency($cacheability);
+
         $executable->addContext($route_context_name, $context);
       }
     }

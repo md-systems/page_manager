@@ -7,9 +7,6 @@
 
 namespace Drupal\page_manager\Form;
 
-use Drupal\Core\Condition\ConditionManager;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-
 /**
  * Provides a form for adding a new static context.
  */

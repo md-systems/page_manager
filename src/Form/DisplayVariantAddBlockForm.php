@@ -27,6 +27,9 @@ class DisplayVariantAddBlockForm extends DisplayVariantConfigureBlockFormBase {
 
   /**
    * Constructs a new DisplayVariantFormBase.
+   *
+   * @param \Drupal\Component\Plugin\PluginManagerInterface $block_manager
+   *   The block manager.
    */
   public function __construct(PluginManagerInterface $block_manager) {
     $this->blockManager = $block_manager;

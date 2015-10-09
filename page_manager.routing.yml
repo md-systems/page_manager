@@ -1,6 +1,6 @@
 #### Pages
 
-page_manager.page_list:
+entity.page.collection:
   path: '/admin/structure/page_manager'
   defaults:
     _entity_list: 'page'

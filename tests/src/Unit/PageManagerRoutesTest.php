@@ -7,6 +7,7 @@
 
 namespace Drupal\Tests\page_manager\Unit;
 
+use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Routing\RouteBuildEvent;
@@ -40,6 +41,13 @@ class PageManagerRoutesTest extends UnitTestCase {
   protected $pageStorage;
 
   /**
+   * The cache tags invalidator.
+   *
+   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface|\Prophecy\Prophecy\ProphecyInterface
+   */
+  protected $cacheTagsInvalidator;
+
+  /**
    * The tested page route subscriber.
    *
    * @var \Drupal\page_manager\Routing\PageManagerRoutes
@@ -57,8 +65,9 @@ class PageManagerRoutesTest extends UnitTestCase {
     $this->entityManager = $this->prophesize(EntityManagerInterface::class);
     $this->entityManager->getStorage('page')
       ->willReturn($this->pageStorage);
+    $this->cacheTagsInvalidator = $this->prophesize(CacheTagsInvalidatorInterface::class);
 
-    $this->routeSubscriber = new PageManagerRoutes($this->entityManager->reveal());
+    $this->routeSubscriber = new PageManagerRoutes($this->entityManager->reveal(), $this->cacheTagsInvalidator->reveal());
   }
 
   /**
@@ -71,11 +80,11 @@ class PageManagerRoutesTest extends UnitTestCase {
     $page = $this->prophesize(PageInterface::class);
     $page->status()
       ->willReturn(TRUE)
-      ->shouldBeCalledTimes(1);
-    $page->getPath()->shouldNotBeCalled();
+      ->shouldBeCalled();
+    $page->getPath()->willReturn('/page');
     $page->isFallbackPage()
       ->willReturn(TRUE)
-      ->shouldBeCalledTimes(1);
+      ->shouldBeCalled();
     $pages['page1'] = $page->reveal();
 
     $this->pageStorage->loadMultiple()
@@ -100,25 +109,27 @@ class PageManagerRoutesTest extends UnitTestCase {
     $page1 = $this->prophesize(PageInterface::class);
     $page1->status()
       ->willReturn(TRUE)
-      ->shouldBeCalledTimes(1);
+      ->shouldBeCalled();
     $page1->getPath()
       ->willReturn('/page1')
-      ->shouldBeCalledTimes(1);
+      ->shouldBeCalled();
     $page1->isFallbackPage()
       ->willReturn(FALSE);
     $page1->label()
       ->willReturn('Page label')
-      ->shouldBeCalledTimes(1);
+      ->shouldBeCalled();
     $page1->usesAdminTheme()
       ->willReturn(TRUE)
-      ->shouldBeCalledTimes(1);
+      ->shouldBeCalled();
     $pages['page1'] = $page1->reveal();
 
     // Set up a disabled page.
     $page2 = $this->prophesize(PageInterface::class);
     $page2->status()
       ->willReturn(FALSE)
-      ->shouldBeCalledTimes(1);
+      ->shouldBeCalled();
+    $page2->isFallbackPage()->willReturn(FALSE);
+    $page2->getPath()->willReturn('/page2');
     $pages['page2'] = $page2->reveal();
 
     $this->pageStorage->loadMultiple()
@@ -206,16 +217,20 @@ class PageManagerRoutesTest extends UnitTestCase {
    * Tests overriding an existing route.
    *
    * @covers ::alterRoutes
+   * @covers ::findPageRouteName
+   *
+   * @dataProvider providerTestAlterRoutesOverrideExisting
    */
-  public function testAlterRoutesOverrideExisting() {
+  public function testAlterRoutesOverrideExisting($page_path, $existing_route_path) {
+    $route_name = 'test_route';
     // Set up a page with the same path as an existing route.
     $page = $this->prophesize(PageInterface::class);
     $page->status()
       ->willReturn(TRUE)
-      ->shouldBeCalledTimes(1);
+      ->shouldBeCalled();
     $page->getPath()
-      ->willReturn('/test_route')
-      ->shouldBeCalledTimes(1);
+      ->willReturn($page_path)
+      ->shouldBeCalled();
     $page->isFallbackPage()->willReturn(FALSE);
     $page->label()->willReturn(NULL);
     $page->usesAdminTheme()->willReturn(FALSE);
@@ -224,8 +239,10 @@ class PageManagerRoutesTest extends UnitTestCase {
       ->willReturn(['page1' => $page->reveal()])
       ->shouldBeCalledTimes(1);
 
+    $this->cacheTagsInvalidator->invalidateTags(["page_manager_route_name:$route_name"])->shouldBeCalledTimes(1);
+
     $collection = new RouteCollection();
-    $collection->add('test_route', new Route('test_route', [], [], ['parameters' => ['foo' => 'bar']]));
+    $collection->add($route_name, new Route($existing_route_path, ['default_exists' => 'default_value'], [], ['parameters' => ['foo' => 'bar']]));
     $route_event = new RouteBuildEvent($collection);
     $this->routeSubscriber->onAlterRoutes($route_event);
 
@@ -233,7 +250,7 @@ class PageManagerRoutesTest extends UnitTestCase {
     $this->assertSame(1, $collection->count());
     $this->assertNull($collection->get('page_manager.page_view_page1'));
 
-    $route = $collection->get('test_route');
+    $route = $collection->get($route_name);
     $expected_defaults = [
       '_entity_view' => 'page_manager_page',
       'page_manager_page' => 'page1',
@@ -252,7 +269,17 @@ class PageManagerRoutesTest extends UnitTestCase {
       ],
       '_admin_route' => FALSE,
     ];
-    $this->assertMatchingRoute($route, '/test_route', $expected_defaults, $expected_requirements, $expected_options);
+    $this->assertMatchingRoute($route, $existing_route_path, $expected_defaults, $expected_requirements, $expected_options);
+  }
+
+  public function providerTestAlterRoutesOverrideExisting() {
+    $data = [];
+    $data['no_slug'] = ['/test_route', '/test_route'];
+    $data['slug'] = ['/test_route/{test_route}', '/test_route/{test_route}'];
+    $data['placeholder'] = ['/test_route/%', '/test_route/{test_route}'];
+    $data['slug_with_default'] = ['/test_route/{default_exists}', '/test_route/{default_exists}'];
+    $data['placeholder_with_default'] = ['/test_route/%', '/test_route/{default_exists}'];
+    return $data;
   }
 
   /**

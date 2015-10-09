@@ -16,8 +16,13 @@ services:
       - { name: 'event_subscriber' }
   page_manager.page_manager_routes:
     class: Drupal\page_manager\Routing\PageManagerRoutes
-    arguments: ['@entity.manager']
+    arguments: ['@entity.manager', '@cache_tags.invalidator']
     tags:
       - { name: 'event_subscriber' }
   page_manager.executable_factory:
     class: Drupal\page_manager\PageExecutableFactory
+  page_manager.route_name_response_subscriber:
+    class: Drupal\page_manager\EventSubscriber\RouteNameResponseSubscriber
+    tags:
+      - { name: event_subscriber }
+    arguments: ['@current_route_match']
