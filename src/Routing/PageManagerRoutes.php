@@ -8,7 +8,7 @@
 namespace Drupal\page_manager\Routing;
 
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\RouteCompiler;
 use Drupal\Core\Routing\RouteSubscriberBase;
 use Drupal\Core\Routing\RoutingEvents;
@@ -40,13 +40,13 @@ class PageManagerRoutes extends RouteSubscriberBase {
   /**
    * Constructs a new PageManagerRoutes.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    * @param \Drupal\Core\Cache\CacheTagsInvalidatorInterface $cache_tags_invalidator
    *   The cache tags invalidator.
    */
-  public function __construct(EntityManagerInterface $entity_manager, CacheTagsInvalidatorInterface $cache_tags_invalidator) {
-    $this->entityStorage = $entity_manager->getStorage('page');
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, CacheTagsInvalidatorInterface $cache_tags_invalidator) {
+    $this->entityStorage = $entity_type_manager->getStorage('page');
     $this->cacheTagsInvalidator = $cache_tags_invalidator;
   }
 
@@ -58,16 +58,20 @@ class PageManagerRoutes extends RouteSubscriberBase {
       /** @var \Drupal\page_manager\PageInterface $entity */
 
       // If the page is disabled skip making a route for it.
-      if (!$entity->status() || $entity->isFallbackPage()) {
+      if (!$entity->status() || !$entity->getVariants()) {
         continue;
       }
 
       // Prepare the values that need to be altered for an existing page.
       $parameters = [
+        'page_manager_page_variant' => [
+          'type' => 'entity:page_variant',
+        ],
         'page_manager_page' => [
           'type' => 'entity:page',
         ],
       ];
+      $requirements = [];
 
       $arguments = [];
 
@@ -77,6 +81,7 @@ class PageManagerRoutes extends RouteSubscriberBase {
         $collection_route = $collection->get($route_name);
         $path = $collection_route->getPath();
         $parameters += $collection_route->getOption('parameters') ?: [];
+        $requirements += $collection_route->getRequirements();
 
         $collection->remove($route_name);
       }
@@ -104,23 +109,31 @@ class PageManagerRoutes extends RouteSubscriberBase {
       }
 
 
-      // Construct an add a new route.
-      $route = new Route(
-        $path,
-        [
-          '_entity_view' => 'page_manager_page',
-          'page_manager_page' => $entity_id,
-          '_title' => $entity->label(),
-        ] + $arguments,
-        [
-          '_entity_access' => 'page_manager_page.view',
-        ],
-        [
-          'parameters' => $parameters,
-          '_admin_route' => $entity->usesAdminTheme(),
-        ]
-      );
-      $collection->add($route_name, $route);
+      $page_id = $entity->id();
+      $first = TRUE;
+      foreach ($entity->getVariants() as $variant_id => $variant) {
+        // Construct and add a new route.
+        $route = new Route(
+          $path,
+          [
+            '_entity_view' => 'page_manager_page_variant',
+            '_title' => $entity->label(),
+            'page_manager_page_variant' => $variant_id,
+            'page_manager_page' => $page_id,
+            // When adding multiple variants, the variant ID is added to the
+            // route name. In order to convey the base route name for this set
+            // of variants, add it as a parameter.
+            'base_route_name' => $route_name,
+          ] + $arguments,
+          $requirements,
+          [
+            'parameters' => $parameters,
+            '_admin_route' => $entity->usesAdminTheme(),
+          ]
+        );
+        $collection->add($first ? $route_name : $route_name . '_' . $variant_id, $route);
+        $first = FALSE;
+      }
     }
   }
 

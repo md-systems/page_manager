@@ -7,7 +7,11 @@
 
 namespace Drupal\Tests\page_manager\Unit;
 
+use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\page_manager\Entity\Page;
+use Drupal\page_manager\PageVariantInterface;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -20,35 +24,34 @@ use Drupal\Tests\UnitTestCase;
 class PageTest extends UnitTestCase {
 
   /**
-   * @covers ::isFallbackPage
-   *
-   * @dataProvider providerTestIsFallbackPage
+   * @covers ::getVariants
    */
-  public function testIsFallbackPage($id, $expected) {
-    $page = $this->getMockBuilder(Page::class)
-      ->setConstructorArgs([['id' => $id], 'page'])
-      ->setMethods(['configFactory'])
-      ->getMock();
+  public function testGetVariants() {
+    $variant1 = $this->prophesize(PageVariantInterface::class);
+    $variant1->id()->willReturn('variant1');
+    $variant1->getWeight()->willReturn(0);
+    $variant2 = $this->prophesize(PageVariantInterface::class);
+    $variant2->id()->willReturn('variant2');
+    $variant2->getWeight()->willReturn(-10);
 
-    $config_factory = $this->getConfigFactoryStub([
-      'page_manager.settings' => [
-        'fallback_page' => 'fallback',
-      ]]);
-    $page->expects($this->once())
-      ->method('configFactory')
-      ->will($this->returnValue($config_factory));
+    $entity_storage = $this->prophesize(EntityStorageInterface::class);
+    $entity_storage
+      ->loadByProperties(['page' => 'the_page'])
+      ->willReturn(['variant1' => $variant1->reveal(), 'variant2' => $variant2->reveal()])
+      ->shouldBeCalledTimes(1);
 
-    $this->assertSame($expected, $page->isFallbackPage());
-  }
+    $entity_type_manager = $this->prophesize(EntityTypeManagerInterface::class);
+    $entity_type_manager->getStorage('page_variant')->willReturn($entity_storage);
 
-  /**
-   * Provides test data for testIsFallbackPage().
-   */
-  public function providerTestIsFallbackPage() {
-    $data = [];
-    $data[] = ['foo', FALSE];
-    $data[] = ['fallback', TRUE];
-    return $data;
+    $container = new ContainerBuilder();
+    $container->set('entity_type.manager', $entity_type_manager->reveal());
+    \Drupal::setContainer($container);
+
+    $page = new Page(['id' => 'the_page'], 'page');
+    $variants = $page->getVariants();
+    $this->assertSame(['variant2' => $variant2->reveal(), 'variant1' => $variant1->reveal()], $variants);
+    $variants = $page->getVariants();
+    $this->assertSame(['variant2' => $variant2->reveal(), 'variant1' => $variant1->reveal()], $variants);
   }
 
 }

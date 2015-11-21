@@ -12,7 +12,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
-use Drupal\page_manager\PageInterface;
 
 /**
  * Provides a base form for editing and adding a condition.
@@ -20,13 +19,6 @@ use Drupal\page_manager\PageInterface;
 abstract class ConditionFormBase extends FormBase {
 
   use ContextAwarePluginAssignmentTrait;
-
-  /**
-   * The page entity this condition belongs to.
-   *
-   * @var \Drupal\page_manager\PageInterface
-   */
-  protected $page;
 
   /**
    * The condition used by this form.
@@ -66,11 +58,10 @@ abstract class ConditionFormBase extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, PageInterface $page = NULL, $condition_id = NULL) {
-    $this->page = $page;
+  public function buildForm(array $form, FormStateInterface $form_state, $condition_id = NULL, $contexts = []) {
     $this->condition = $this->prepareCondition($condition_id);
     $temporary = $form_state->getTemporary();
-    $temporary['gathered_contexts'] = $this->page->getContexts();
+    $temporary['gathered_contexts'] = $contexts;
     $form_state->setTemporary($temporary);
 
     // Allow the condition to add to the form.

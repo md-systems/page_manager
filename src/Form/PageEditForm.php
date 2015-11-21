@@ -7,6 +7,7 @@
 
 namespace Drupal\page_manager\Form;
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\ctools\Form\AjaxFormTrait;
@@ -103,15 +104,15 @@ class PageEditForm extends PageFormBase {
       $form['context']['available_context'][$name] = $row;
     }
 
-    $form['display_variant_section'] = [
+    $form['variant_section'] = [
       '#type' => 'details',
-      '#title' => $this->t('Display variants'),
+      '#title' => $this->t('Variants'),
       '#open' => TRUE,
     ];
-    $form['display_variant_section']['add_new_page'] = [
+    $form['variant_section']['add_new_page'] = [
       '#type' => 'link',
-      '#title' => $this->t('Add new display variant'),
-      '#url' => Url::fromRoute('page_manager.display_variant_select', [
+      '#title' => $this->t('Add new variant'),
+      '#url' => Url::fromRoute('page_manager.variant_select', [
         'page' => $this->entity->id(),
       ]),
       '#attributes' => $add_button_attributes,
@@ -121,7 +122,7 @@ class PageEditForm extends PageFormBase {
         ],
       ],
     ];
-    $form['display_variant_section']['display_variants'] = [
+    $form['variant_section']['variants'] = [
       '#type' => 'table',
       '#header' => [
         $this->t('Label'),
@@ -129,50 +130,45 @@ class PageEditForm extends PageFormBase {
         $this->t('Weight'),
         $this->t('Operations'),
       ],
-      '#empty' => $this->t('There are no display variants.'),
+      '#empty' => $this->t('There are no variants.'),
       '#tabledrag' => [[
         'action' => 'order',
         'relationship' => 'sibling',
-        'group' => 'display-variant-weight',
+        'group' => 'variant-weight',
       ]],
     ];
-    foreach ($this->entity->getVariants() as $display_variant_id => $display_variant) {
+    /** @var \Drupal\page_manager\PageVariantInterface $page_variant */
+    foreach ($this->entity->getVariants() as $page_variant) {
       $row = [
         '#attributes' => [
           'class' => ['draggable'],
         ],
       ];
-      $row['label']['#markup'] = $display_variant->label();
-      $row['id']['#markup'] = $display_variant->adminLabel();
+      $row['label']['#markup'] = $page_variant->label();
+      $row['id']['#markup'] = $page_variant->getVariantPlugin()->adminLabel();
       $row['weight'] = [
         '#type' => 'weight',
-        '#default_value' => $display_variant->getWeight(),
-        '#title' => $this->t('Weight for @display_variant display variant', ['@display_variant' => $display_variant->label()]),
+        '#default_value' => $page_variant->getWeight(),
+        '#title' => $this->t('Weight for @page_variant variant', ['@page_variant' => $page_variant->label()]),
         '#title_display' => 'invisible',
         '#attributes' => [
-          'class' => ['display-variant-weight'],
+          'class' => ['variant-weight'],
         ],
       ];
       $operations = [];
       $operations['edit'] = [
         'title' => $this->t('Edit'),
-        'url' => Url::fromRoute('page_manager.display_variant_edit', [
-          'page' => $this->entity->id(),
-          'display_variant_id' => $display_variant_id,
-        ]),
+        'url' => $page_variant->toUrl('edit-form'),
       ];
       $operations['delete'] = [
         'title' => $this->t('Delete'),
-        'url' => Url::fromRoute('page_manager.display_variant_delete', [
-          'page' => $this->entity->id(),
-          'display_variant_id' => $display_variant_id,
-        ]),
+        'url' => $page_variant->toUrl('delete-form'),
       ];
       $row['operations'] = [
         '#type' => 'operations',
         '#links' => $operations,
       ];
-      $form['display_variant_section']['display_variants'][$display_variant_id] = $row;
+      $form['variant_section']['variants'][$page_variant->id()] = $row;
     }
 
     if ($access_conditions = $this->entity->getAccessConditions()) {
@@ -251,10 +247,11 @@ class PageEditForm extends PageFormBase {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    if (!$form_state->isValueEmpty('display_variants')) {
-      foreach ($form_state->getValue('display_variants') as $display_variant_id => $data) {
-        if ($display_variant = $this->entity->getVariant($display_variant_id)) {
-          $display_variant->setWeight($data['weight']);
+    if (!$form_state->isValueEmpty('variants')) {
+      foreach ($form_state->getValue('variants') as $variant_id => $data) {
+        if ($variant_entity = $this->entity->getVariant($variant_id)) {
+          $variant_entity->setWeight($data['weight']);
+          $variant_entity->save();
         }
       }
     }
@@ -263,4 +260,14 @@ class PageEditForm extends PageFormBase {
     $form_state->setRedirect('entity.page.collection');
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
+    // Variants will be handled independently.
+    $variants = $form_state->getValue('variants');
+    $form_state->unsetValue('variants');
+    parent::copyFormValuesToEntity($entity, $form, $form_state);
+    $form_state->setValue('variants', $variants);
+  }
 }

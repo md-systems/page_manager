@@ -45,7 +45,11 @@ class RouteNameResponseSubscriber implements EventSubscriberInterface {
     $response = $event->getResponse();
     if ($response instanceof CacheableResponseInterface) {
       $cacheability_metadata = $response->getCacheableMetadata();
-      $cacheability_metadata->addCacheTags(['page_manager_route_name:' . $this->routeMatch->getRouteName()]);
+      // If the route specifies a 'base route name', use that. Otherwise fall
+      // back to the route name. The 'base route name' is specified in
+      // \Drupal\page_manager\Routing\PageManagerRoutes.
+      $route_name = $this->routeMatch->getParameter('base_route_name') ?: $this->routeMatch->getRouteName();
+      $cacheability_metadata->addCacheTags(['page_manager_route_name:' . $route_name]);
     }
   }
 

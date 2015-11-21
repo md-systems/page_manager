@@ -48,7 +48,7 @@ class AccessConditionDeleteForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return $this->page->urlInfo('edit-form');
+    return $this->page->toUrl('edit-form');
   }
 
   /**

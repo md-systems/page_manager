@@ -118,19 +118,18 @@ class PageAccessTest extends UnitTestCase {
    *
    * @dataProvider providerTestAccessDelete
    */
-  public function testAccessDelete($is_new, $is_fallback, $expected) {
+  public function testAccessDelete($is_new, $expected) {
     $this->entityType->getAdminPermission()->willReturn('test permission');
 
     $page = $this->prophesize(PageInterface::class);
     $page->isNew()->willReturn($is_new);
-    $page->isFallbackPage()->willReturn($is_fallback);
     $page->language()->willReturn($this->prophesize(LanguageInterface::class)->reveal());
 
     $page->uuid()->shouldBeCalled();
     $page->getEntityTypeId()->shouldBeCalled();
 
     // Ensure that the cache tag is added for the temporary conditions.
-    if ($is_new || $is_fallback) {
+    if ($is_new) {
       $page->getCacheTags()->willReturn(['page:1']);
       $page->getCacheContexts()->willReturn([]);
       $page->getCacheMaxAge()->willReturn(0);
@@ -151,10 +150,8 @@ class PageAccessTest extends UnitTestCase {
    */
   public function providerTestAccessDelete() {
     $data = [];
-    $data[] = [TRUE, FALSE, FALSE];
-    $data[] = [FALSE, TRUE, FALSE];
-    $data[] = [TRUE, TRUE, FALSE];
-    $data[] = [FALSE, FALSE, TRUE];
+    $data[] = [TRUE, FALSE];
+    $data[] = [FALSE, TRUE];
     return $data;
   }
 

@@ -2,21 +2,21 @@
 
 /**
  * @file
- * Contains \Drupal\page_manager\Form\DisplayVariantAddBlockForm.
+ * Contains \Drupal\page_manager\Form\VariantPluginAddBlockForm.
  */
 
 namespace Drupal\page_manager\Form;
 
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Provides a form for adding a block plugin to a display variant.
+ * Provides a form for adding a block plugin to a variant.
  */
-class DisplayVariantAddBlockForm extends DisplayVariantConfigureBlockFormBase {
+class VariantPluginAddBlockForm extends VariantPluginConfigureBlockFormBase {
 
   /**
    * The block manager.
@@ -26,7 +26,7 @@ class DisplayVariantAddBlockForm extends DisplayVariantConfigureBlockFormBase {
   protected $blockManager;
 
   /**
-   * Constructs a new DisplayVariantFormBase.
+   * Constructs a new VariantPluginFormBase.
    *
    * @param \Drupal\Component\Plugin\PluginManagerInterface $block_manager
    *   The block manager.
@@ -48,7 +48,7 @@ class DisplayVariantAddBlockForm extends DisplayVariantConfigureBlockFormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'page_manager_display_variant_add_block_form';
+    return 'page_manager_variant_add_block_form';
   }
 
   /**
@@ -56,15 +56,15 @@ class DisplayVariantAddBlockForm extends DisplayVariantConfigureBlockFormBase {
    */
   protected function prepareBlock($plugin_id) {
     $block = $this->blockManager->createInstance($plugin_id);
-    $block_id = $this->displayVariant->addBlock($block->getConfiguration());
-    return $this->displayVariant->getBlock($block_id);
+    $block_id = $this->getVariantPlugin()->addBlock($block->getConfiguration());
+    return $this->getVariantPlugin()->getBlock($block_id);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, Request $request = NULL, PageInterface $page = NULL, $display_variant_id = NULL, $block_id = NULL) {
-    $form = parent::buildForm($form, $form_state, $page, $display_variant_id, $block_id);
+  public function buildForm(array $form, FormStateInterface $form_state, Request $request = NULL, PageVariantInterface $page_variant = NULL, $block_id = NULL) {
+    $form = parent::buildForm($form, $form_state, $page_variant, $block_id);
     $form['region']['#default_value'] = $request->query->get('region');
     return $form;
   }

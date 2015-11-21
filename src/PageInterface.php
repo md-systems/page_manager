@@ -9,12 +9,11 @@ namespace Drupal\page_manager;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
-use Drupal\page_manager\Plugin\VariantAwareInterface;
 
 /**
  * Provides an interface for page entities.
  */
-interface PageInterface extends ConfigEntityInterface, EntityWithPluginCollectionInterface, VariantAwareInterface {
+interface PageInterface extends ConfigEntityInterface, EntityWithPluginCollectionInterface {
 
   /**
    * Returns whether the page entity is enabled.
@@ -46,6 +45,45 @@ interface PageInterface extends ConfigEntityInterface, EntityWithPluginCollectio
    *   TRUE if this is an admin page, FALSE otherwise.
    */
   public function usesAdminTheme();
+
+  /**
+   * Adds a variant to this page.
+   *
+   * @param \Drupal\page_manager\PageVariantInterface $variant
+   *   A page variant entity.
+   *
+   * @return $this
+   */
+  public function addVariant(PageVariantInterface $variant);
+
+  /**
+   * Retrieves a specific variant.
+   *
+   * @param string $variant_id
+   *   The variant ID.
+   *
+   * @return \Drupal\page_manager\PageVariantInterface
+   *   The variant object.
+   */
+  public function getVariant($variant_id);
+
+  /**
+   * Removes a specific variant.
+   *
+   * @param string $variant_id
+   *   The variant ID.
+   *
+   * @return $this
+   */
+  public function removeVariant($variant_id);
+
+  /**
+   * Returns the variants available for the entity.
+   *
+   * @return \Drupal\page_manager\PageVariantInterface[]
+   *   An array of the variants.
+   */
+  public function getVariants();
 
   /**
    * Returns the conditions used for determining access for this page entity.
@@ -143,15 +181,5 @@ interface PageInterface extends ConfigEntityInterface, EntityWithPluginCollectio
    *   An array of set context values, keyed by context name.
    */
   public function getContexts();
-
-  /**
-   * Returns if this page is the fallback page.
-   *
-   * The fallback page can never be disabled. It must always be available.
-   *
-   * @return bool
-   *   TRUE if this page is the fallback page, FALSE otherwise.
-   */
-  public function isFallbackPage();
 
 }

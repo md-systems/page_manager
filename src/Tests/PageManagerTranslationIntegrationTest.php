@@ -67,8 +67,13 @@ class PageManagerTranslationIntegrationTest extends ContentTranslationTestBase {
       'path' => 'node/%',
     ];
     $this->drupalPostForm('admin/structure/page_manager/add', $edit, 'Save');
-    $this->clickLink('Edit');
-    $this->drupalPostForm(NULL, ['display_variant[status_code]' => 200], 'Update display variant');
+
+    // Create a new variant.
+    $edit = [
+      'id' => 'http_status_code',
+      'variant_settings[status_code]' => 200,
+    ];
+    $this->drupalPostForm('admin/structure/page_manager/manage/node_view/add/http_status_code', $edit, 'Save');
 
     $this->drupalGet('node/' . $node->id());
     $this->assertResponse(200);

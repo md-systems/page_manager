@@ -44,6 +44,9 @@ class PageManagerAdminTest extends WebTestBase {
     $this->config('system.theme')->set('admin', 'classy')->save();
 
     $this->drupalLogin($this->drupalCreateUser(['administer pages', 'access administration pages', 'view the administration theme']));
+
+    // Remove the default node_view page to start with a clean UI.
+    Page::load('node_view')->delete();
   }
 
   /**
@@ -52,20 +55,19 @@ class PageManagerAdminTest extends WebTestBase {
   public function testAdmin() {
     $this->doTestAddPage();
     $this->doTestDisablePage();
-    $this->doTestAddDisplayVariant();
+    $this->doTestAddVariant();
     $this->doTestAddBlock();
     $this->doTestEditBlock();
-    $this->doTestEditDisplayVariant();
-    $this->doTestReorderDisplayVariants();
+    $this->doTestEditVariant();
+    $this->doTestReorderVariants();
     $this->doTestAddPageWithDuplicatePath();
     $this->doTestAdminPath();
-    $this->doTestRemoveDisplayVariant();
+    $this->doTestRemoveVariant();
     $this->doTestRemoveBlock();
     $this->doTestAddBlockWithAjax();
     $this->doTestEditBlock();
     $this->doTestExistingPathWithoutParameters();
     $this->doTestDeletePage();
-    $this->doTestExistingRoutes();
   }
 
   /**
@@ -94,18 +96,31 @@ class PageManagerAdminTest extends WebTestBase {
     $this->drupalGet('admin/foo');
     $this->assertResponse(404);
     $this->drupalGet('admin/structure/page_manager/manage/foo');
-    $this->clickLink('Edit');
-    $this->drupalPostForm(NULL, ['display_variant[status_code]' => 200], 'Update display variant');
+    $this->clickLink('Add new variant');
+    $this->clickLink('HTTP status code');
+    $edit = [
+      'id' => 'http_status_code',
+      'label' => 'Default',
+      'variant_settings[status_code]' => 200,
+    ];
+    $this->drupalPostForm(NULL, $edit, 'Save');
     $this->drupalGet('admin/foo');
     $this->assertResponse(200);
     $this->assertTitle('Foo | Drupal');
     $this->drupalGet('admin/structure/page_manager/manage/foo');
     $this->clickLink('Edit');
-    $this->drupalPostForm(NULL, ['display_variant[status_code]' => 403], 'Update display variant');
+    $this->drupalPostForm(NULL, ['variant_settings[status_code]' => 403], 'Save');
 
-    // Assert that a display variant was added by default.
+    // Set the weight of the 'Default' variant to 10.
+    $default_variant = $this->findVariantByLabel('foo', 'Default');
+    $edit = [
+      'variants[' . $default_variant->id() . '][weight]' => 10,
+    ];
+    $this->drupalPostForm(NULL, $edit, 'Save');
+
+    // Assert that a variant was added by default.
     $this->drupalGet('admin/structure/page_manager/manage/foo');
-    $this->assertNoText('There are no display variants.');
+    $this->assertNoText('There are no variants.');
   }
 
   /**
@@ -129,20 +144,21 @@ class PageManagerAdminTest extends WebTestBase {
   }
 
   /**
-   * Tests adding a display variant.
+   * Tests adding a variant.
    */
-  protected function doTestAddDisplayVariant() {
+  protected function doTestAddVariant() {
     $this->drupalGet('admin/structure/page_manager/manage/foo');
 
-    // Add a new display variant.
-    $this->clickLink('Add new display variant');
+    // Add a new variant.
+    $this->clickLink('Add new variant');
     $this->clickLink('Block page');
     $edit = [
-      'display_variant[label]' => 'First',
-      'display_variant[page_title]' => 'Example title',
+      'label' => 'First',
+      'id' => 'block_page',
+      'variant_settings[page_title]' => 'Example title',
     ];
-    $this->drupalPostForm(NULL, $edit, 'Add display variant');
-    $this->assertRaw(new FormattableMarkup('The %label display variant has been added.', ['%label' => 'First']));
+    $this->drupalPostForm(NULL, $edit, 'Save');
+    $this->assertRaw(new FormattableMarkup('Saved the %label variant.', ['%label' => 'First']));
 
     // Test that the variant is still used but empty.
     $this->drupalGet('admin/foo');
@@ -206,9 +222,9 @@ class PageManagerAdminTest extends WebTestBase {
   }
 
   /**
-   * Tests editing a display variant.
+   * Tests editing a variant.
    */
-  protected function doTestEditDisplayVariant() {
+  protected function doTestEditVariant() {
     if (!$block = $this->findBlockByLabel('foo', 'First', 'Updated block label')) {
       $this->fail('Block not found');
       return;
@@ -217,27 +233,27 @@ class PageManagerAdminTest extends WebTestBase {
     $block_config = $block->getConfiguration();
     $this->drupalGet('admin/structure/page_manager/manage/foo');
     $this->clickLink('Edit');
-    $this->assertTitle('Edit First display variant | Drupal');
+    $this->assertTitle('Edit First variant | Drupal');
 
-    $this->assertOptionSelected('edit-display-variant-blocks-' . $block_config['uuid'] . '-region', 'top');
-    $this->assertOptionSelected('edit-display-variant-blocks-' . $block_config['uuid'] . '-weight', 0);
+    $this->assertOptionSelected('edit-variant-plugin-blocks-' . $block_config['uuid'] . '-region', 'top');
+    $this->assertOptionSelected('edit-variant-plugin-blocks-' . $block_config['uuid'] . '-weight', 0);
 
-    $form_name = 'display_variant[blocks][' . $block_config['uuid'] . ']';
+    $form_name = 'variant_plugin[blocks][' . $block_config['uuid'] . ']';
     $edit = [
       $form_name . '[region]' => 'bottom',
       $form_name . '[weight]' => -10,
     ];
-    $this->drupalPostForm(NULL, $edit, 'Update display variant');
-    $this->assertRaw(new FormattableMarkup('The %label display variant has been updated.', ['%label' => 'First']));
+    $this->drupalPostForm(NULL, $edit, 'Save');
+    $this->assertRaw(new FormattableMarkup('Saved the %label variant.', ['%label' => 'First']));
     $this->clickLink('Edit');
-    $this->assertOptionSelected('edit-display-variant-blocks-' . $block_config['uuid'] . '-region', 'bottom');
-    $this->assertOptionSelected('edit-display-variant-blocks-' . $block_config['uuid'] . '-weight', -10);
+    $this->assertOptionSelected('edit-variant-plugin-blocks-' . $block_config['uuid'] . '-region', 'bottom');
+    $this->assertOptionSelected('edit-variant-plugin-blocks-' . $block_config['uuid'] . '-weight', -10);
   }
 
   /**
-   * Tests reordering display variants.
+   * Tests reordering variants.
    */
-  protected function doTestReorderDisplayVariants() {
+  protected function doTestReorderVariants() {
     $this->drupalGet('admin/foo');
     $this->assertResponse(200);
     $elements = $this->xpath('//div[@class="block-region-bottom"]/nav/ul[@class="menu"]/li/a');
@@ -248,9 +264,9 @@ class PageManagerAdminTest extends WebTestBase {
     }
     $this->assertEqual($expected, $links);
 
-    $display_variant = $this->findDisplayVariantByLabel('foo', 'Default');
+    $variant_entity = $this->findVariantByLabel('foo', 'Default');
     $edit = [
-      'display_variants[' . $display_variant->id() . '][weight]' => -10,
+      'variants[' . $variant_entity->id() . '][weight]' => -10,
     ];
     $this->drupalPostForm('admin/structure/page_manager/manage/foo', $edit, 'Save');
     $this->drupalGet('admin/foo');
@@ -293,14 +309,14 @@ class PageManagerAdminTest extends WebTestBase {
   }
 
   /**
-   * Tests removing a display variant.
+   * Tests removing a variant.
    */
-  protected function doTestRemoveDisplayVariant() {
+  protected function doTestRemoveVariant() {
     $this->drupalGet('admin/structure/page_manager/manage/foo');
     $this->clickLink('Delete');
-    $this->assertRaw(new FormattableMarkup('Are you sure you want to delete the display variant %label?', ['%label' => 'Default']));
+    $this->assertRaw(new FormattableMarkup('Are you sure you want to delete %label?', ['%label' => 'Default']));
     $this->drupalPostForm(NULL, [], 'Delete');
-    $this->assertRaw(new FormattableMarkup('The display variant %label has been removed.', ['%label' => 'Default']));
+    $this->assertRaw(new FormattableMarkup('The variant %label has been removed.', ['%label' => 'Default']));
   }
 
   /**
@@ -378,6 +394,15 @@ class PageManagerAdminTest extends WebTestBase {
     // Regular result is displayed.
     $this->assertText('The existing page has been added');
 
+    $this->clickLink('Add new variant');
+    $this->clickLink('HTTP status code');
+    $edit = [
+      'id' => 'http_status_code',
+      'label' => 'Default',
+      'variant_settings[status_code]' => 404,
+    ];
+    $this->drupalPostForm(NULL, $edit, 'Save');
+
     // Ensure the existing path leads to the new page.
     $this->drupalGet('admin');
     $this->assertResponse(404);
@@ -407,8 +432,7 @@ class PageManagerAdminTest extends WebTestBase {
   /**
    * Tests that default arguments are not removed from existing routes.
    */
-  public function doTestExistingRoutes() {
-
+  public function testExistingRoutes() {
     // Test that the page without placeholder is accessible.
     $edit = [
       'label' => 'Placeholder test 2',
@@ -416,6 +440,19 @@ class PageManagerAdminTest extends WebTestBase {
       'path' => '/page-manager-test',
     ];
     $this->drupalPostForm('admin/structure/page_manager/add', $edit, 'Save');
+    $this->drupalGet('page-manager-test');
+    // Without a single variant, it will fall through to the original.
+    $this->assertResponse(200);
+
+    $this->drupalGet('admin/structure/page_manager/manage/placeholder2');
+    $this->clickLink('Add new variant');
+    $this->clickLink('HTTP status code');
+    $edit = [
+      'id' => 'http_status_code',
+      'label' => 'Default',
+      'variant_settings[status_code]' => 404,
+    ];
+    $this->drupalPostForm(NULL, $edit, 'Save');
     $this->drupalGet('page-manager-test');
     $this->assertResponse(404);
 
@@ -442,18 +479,19 @@ class PageManagerAdminTest extends WebTestBase {
    *
    * @param string $page_id
    *   The ID of the page entity.
-   * @param string $display_variant_label
-   *   The label of the display variant.
+   * @param string $variant_label
+   *   The label of the variant.
    * @param string $block_label
    *   The label of the block.
    *
    * @return \Drupal\Core\Block\BlockPluginInterface|null
    *   Either a block plugin, or NULL.
    */
-  protected function findBlockByLabel($page_id, $display_variant_label, $block_label) {
-    if ($display_variant = $this->findDisplayVariantByLabel($page_id, $display_variant_label)) {
-      /** @var \Drupal\ctools\Plugin\BlockVariantInterface $display_variant */
-      foreach ($display_variant->getRegionAssignments() as $blocks) {
+  protected function findBlockByLabel($page_id, $variant_label, $block_label) {
+    if ($page_variant = $this->findVariantByLabel($page_id, $variant_label)) {
+      /** @var \Drupal\ctools\Plugin\BlockVariantInterface $variant_plugin */
+      $variant_plugin = $page_variant->getVariantPlugin();
+      foreach ($variant_plugin->getRegionAssignments() as $blocks) {
         /** @var \Drupal\Core\Block\BlockPluginInterface[] $blocks */
         foreach ($blocks as $block) {
           if ($block->label() == $block_label) {
@@ -466,22 +504,22 @@ class PageManagerAdminTest extends WebTestBase {
   }
 
   /**
-   * Finds a display variant based on its page and display variant label.
+   * Finds a variant based on its page and variant label.
    *
    * @param string $page_id
    *   The ID of the page entity.
-   * @param string $display_variant_label
-   *   The label of the display variant.
+   * @param string $variant_label
+   *   The label of the variant.
    *
-   * @return \Drupal\Core\Display\VariantInterface|null
-   *   Either a display variant, or NULL.
+   * @return \Drupal\page_manager\PageVariantInterface|NULL
+   *   Either a variant, or NULL.
    */
-  protected function findDisplayVariantByLabel($page_id, $display_variant_label) {
+  protected function findVariantByLabel($page_id, $variant_label) {
     if ($page = Page::load($page_id)) {
       /** @var \Drupal\page_manager\PageInterface $page */
-      foreach ($page->getVariants() as $display_variant) {
-        if ($display_variant->label() == $display_variant_label) {
-          return $display_variant;
+      foreach ($page->getVariants() as $page_variant) {
+        if ($page_variant->label() == $variant_label) {
+          return $page_variant;
         }
       }
     }

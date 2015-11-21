@@ -47,8 +47,13 @@ class PagePlaceholderTest extends WebTestBase {
       'path' => '/page-manager-test/%',
     ];
     $this->drupalPostForm('admin/structure/page_manager/add', $edit, 'Save');
-    $this->clickLink('Edit');
-    $this->drupalPostForm(NULL, ['display_variant[status_code]' => 200], 'Update display variant');
+
+    // Create a new variant.
+    $edit = [
+      'id' => 'http_status_code',
+      'variant_settings[status_code]' => 200,
+    ];
+    $this->drupalPostForm('admin/structure/page_manager/manage/placeholder/add/http_status_code', $edit, 'Save');
 
     // Access the page callback again and check that now the text is not there.
     $this->drupalGet('page-manager-test/' . $page_string);

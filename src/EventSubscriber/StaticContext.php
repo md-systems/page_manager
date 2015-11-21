@@ -7,7 +7,7 @@
 
 namespace Drupal\page_manager\EventSubscriber;
 
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Plugin\Context\ContextDefinition;
 use Drupal\page_manager\Context\EntityLazyLoadContext;
 use Drupal\page_manager\Event\PageManagerContextEvent;
@@ -23,20 +23,20 @@ class StaticContext implements EventSubscriberInterface {
   use StringTranslationTrait;
 
   /**
-   * The entity manager.
+   * The entity repository.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
    */
-  protected $entityManager;
+  protected $entityRepository;
 
   /**
    * Constructs a new StaticContext.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
    */
-  public function __construct(EntityManagerInterface $entity_manager) {
-    $this->entityManager = $entity_manager;
+  public function __construct(EntityRepositoryInterface $entity_repository) {
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -50,7 +50,7 @@ class StaticContext implements EventSubscriberInterface {
     $static_contexts = $executable->getPage()->getStaticContexts();
 
     foreach ($static_contexts as $name => $static_context) {
-      $context = new EntityLazyLoadContext(new ContextDefinition($static_context['type'], $static_context['label']), $this->entityManager, $static_context['value']);
+      $context = new EntityLazyLoadContext(new ContextDefinition($static_context['type'], $static_context['label']), $this->entityRepository, $static_context['value']);
       $executable->addContext($name, $context);
     }
 

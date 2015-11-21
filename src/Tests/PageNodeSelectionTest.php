@@ -7,10 +7,11 @@
 
 namespace Drupal\page_manager\Tests;
 
+use Drupal\page_manager\Entity\Page;
 use Drupal\simpletest\WebTestBase;
 
 /**
- * Tests selecting display variants based on nodes.
+ * Tests selecting variants based on nodes.
  *
  * @group page_manager
  */
@@ -59,7 +60,14 @@ class PageNodeSelectionTest extends WebTestBase {
       'path' => 'node/%',
     ];
     $this->drupalPostForm('admin/structure/page_manager/add', $edit, 'Save');
-    // Their pages should now use the default 404 display variant.
+
+    // Create a new variant to always return 404.
+    $edit = [
+      'id' => 'http_status_code',
+      'variant_settings[status_code]' => 404,
+    ];
+    $this->drupalPostForm('admin/structure/page_manager/manage/node_view/add/http_status_code', $edit, 'Save');
+
     $this->drupalGet('node/' . $node1->id());
     $this->assertResponse(404);
     $this->assertCacheTag('page_manager_route_name:entity.node.canonical');
@@ -68,14 +76,15 @@ class PageNodeSelectionTest extends WebTestBase {
     $this->assertResponse(404);
     $this->assertNoText($node2->label());
 
-    // Add a new display variant.
+    // Add a new variant.
     $this->drupalGet('admin/structure/page_manager/manage/node_view');
-    $this->clickLink('Add new display variant');
+    $this->clickLink('Add new variant');
     $this->clickLink('Block page');
     $edit = [
-      'display_variant[label]' => 'First',
+      'id' => 'block_page_first',
+      'label' => 'First',
     ];
-    $this->drupalPostForm(NULL, $edit, 'Add display variant');
+    $this->drupalPostForm(NULL, $edit, 'Save');
 
     // Add the entity view block.
     $this->clickLink('Add new block');
@@ -96,9 +105,22 @@ class PageNodeSelectionTest extends WebTestBase {
 
     // Set the page title to the node title.
     $edit = [
-      'display_variant[page_title]' => '[node:title]',
+      'variant_settings[page_title]' => '[node:title]',
     ];
-    $this->drupalPostForm(NULL, $edit, 'Update display variant');
+    $this->drupalPostForm(NULL, $edit, 'Save');
+
+    /** @var \Drupal\page_manager\PageInterface $page */
+    $page = Page::load('node_view');
+    foreach ($page->getVariants() as $block_variant_uuid => $block_variant) {
+      if ($block_variant->label() == 'First') {
+        break;
+      }
+    }
+    // Set the weight of the block_page variant to -10.
+    $edit = [
+      'variants[' . $block_variant_uuid . '][weight]' => -10,
+    ];
+    $this->drupalPostForm(NULL, $edit, 'Save');
 
     // The page node will 404, but the article node will display the variant.
     $this->drupalGet('node/' . $node1->id());
@@ -114,6 +136,9 @@ class PageNodeSelectionTest extends WebTestBase {
     $this->drupalGet('node/' . $node3->id());
     $this->assertNoText($node2->label());
 
+    // Ensure this doesn't affect the /node/add page.
+    $this->drupalGet('node/add');
+    $this->assertResponse(200);
   }
 
 }

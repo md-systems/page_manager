@@ -8,7 +8,7 @@
 namespace Drupal\page_manager\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 
 /**
  * Provides a base form for editing and adding a selection condition.
@@ -16,18 +16,18 @@ use Drupal\page_manager\PageInterface;
 abstract class SelectionConditionFormBase extends ConditionFormBase {
 
   /**
-   * The display variant.
+   * The page variant entity.
    *
-   * @var \Drupal\ctools\Plugin\ConditionVariantInterface
+   * @var \Drupal\page_manager\PageVariantInterface
    */
-  protected $displayVariant;
+  protected $pageVariant;
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, PageInterface $page = NULL, $display_variant_id = NULL, $condition_id = NULL) {
-    $this->displayVariant = $page->getVariant($display_variant_id);
-    return parent::buildForm($form, $form_state, $page, $condition_id);
+  public function buildForm(array $form, FormStateInterface $form_state, PageVariantInterface $page_variant = NULL, $condition_id = NULL) {
+    $this->pageVariant = $page_variant;
+    return parent::buildForm($form, $form_state, $condition_id, $page_variant->getContexts());
   }
 
   /**
@@ -39,16 +39,13 @@ abstract class SelectionConditionFormBase extends ConditionFormBase {
     $configuration = $this->condition->getConfiguration();
     // If this selection condition is new, add it to the page.
     if (!isset($configuration['uuid'])) {
-      $this->displayVariant->addSelectionCondition($configuration);
+      $this->pageVariant->addSelectionCondition($configuration);
     }
 
     // Save the page entity.
-    $this->page->save();
+    $this->pageVariant->save();
 
-    $form_state->setRedirect('page_manager.display_variant_edit', [
-      'page' => $this->page->id(),
-      'display_variant_id' => $this->displayVariant->id(),
-    ]);
+    $form_state->setRedirectUrl($this->pageVariant->toUrl('edit-form'));
   }
 
 }

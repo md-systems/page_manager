@@ -14,6 +14,7 @@ use Drupal\Core\Plugin\Context\ContextHandlerInterface;
 use Drupal\Core\Url;
 use Drupal\ctools\Form\AjaxFormTrait;
 use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -53,7 +54,7 @@ class PageManagerController extends ControllerBase {
   protected $contextHandler;
 
   /**
-   * Constructs a new DisplayVariantEditForm.
+   * Constructs a new VariantPluginEditForm.
    *
    * @param \Drupal\Core\Block\BlockManagerInterface $block_manager
    *   The block manager.
@@ -99,17 +100,14 @@ class PageManagerController extends ControllerBase {
   /**
    * Route title callback.
    *
-   * @param \Drupal\page_manager\PageInterface $page
-   *   The page entity.
-   * @param string $display_variant_id
-   *   The display variant ID.
+   * @param \Drupal\page_manager\PageVariantInterface $page_variant
+   *   The page variant entity.
    *
    * @return string
-   *   The title for the display variant edit form.
+   *   The title for the page variant edit form.
    */
-  public function editDisplayVariantTitle(PageInterface $page, $display_variant_id) {
-    $display_variant = $page->getVariant($display_variant_id);
-    return $this->t('Edit %label display variant', ['%label' => $display_variant->label()]);
+  public function editPageVariantTitle(PageVariantInterface $page_variant) {
+    return $this->t('Edit %label variant', ['%label' => $page_variant->label()]);
   }
 
   /**
@@ -131,20 +129,16 @@ class PageManagerController extends ControllerBase {
   /**
    * Route title callback.
    *
-   * @param \Drupal\page_manager\PageInterface $page
-   *   The page entity.
-   * @param string $display_variant_id
-   *   The display variant ID.
+   * @param \Drupal\page_manager\PageVariantInterface $page_variant
+   *   The page variant entity.
    * @param string $condition_id
    *   The selection condition ID.
    *
    * @return string
    *   The title for the selection condition edit form.
    */
-  public function editSelectionConditionTitle(PageInterface $page, $display_variant_id, $condition_id) {
-    /** @var \Drupal\ctools\Plugin\ConditionVariantInterface $display_variant */
-    $display_variant = $page->getVariant($display_variant_id);
-    $selection_condition = $display_variant->getSelectionCondition($condition_id);
+  public function editSelectionConditionTitle(PageVariantInterface $page_variant, $condition_id) {
+    $selection_condition = $page_variant->getSelectionCondition($condition_id);
     return $this->t('Edit %label selection condition', ['%label' => $selection_condition->getPluginDefinition()['label']]);
   }
 
@@ -189,25 +183,25 @@ class PageManagerController extends ControllerBase {
   }
 
   /**
-   * Presents a list of display variants to add to the page entity.
+   * Presents a list of variants to add to the page entity.
    *
    * @param \Drupal\page_manager\PageInterface $page
    *   The page entity.
    *
    * @return array
-   *   The display variant selection page.
+   *   The variant selection page.
    */
-  public function selectDisplayVariant(PageInterface $page) {
+  public function selectVariant(PageInterface $page) {
     $build = [
       '#theme' => 'links',
       '#links' => [],
     ];
-    foreach ($this->variantManager->getDefinitions() as $display_variant_id => $display_variant) {
-      $build['#links'][$display_variant_id] = [
-        'title' => $display_variant['admin_label'],
-        'url' => Url::fromRoute('page_manager.display_variant_add', [
+    foreach ($this->variantManager->getDefinitions() as $variant_plugin_id => $variant_plugin) {
+      $build['#links'][$variant_plugin_id] = [
+        'title' => $variant_plugin['admin_label'],
+        'url' => Url::fromRoute('entity.page_variant.add_form', [
           'page' => $page->id(),
-          'display_variant_id' => $display_variant_id,
+          'variant_plugin_id' => $variant_plugin_id,
         ]),
         'attributes' => $this->getAjaxAttributes(),
       ];
@@ -246,26 +240,24 @@ class PageManagerController extends ControllerBase {
   /**
    * Presents a list of selection conditions to add to the page entity.
    *
-   * @param \Drupal\page_manager\PageInterface $page
-   *   The page entity.
-   * @param string $display_variant_id
-   *   The display variant ID.
+   * @param \Drupal\page_manager\PageVariantInterface $page_variant
+   *   The page variant entity.
    *
    * @return array
    *   The selection condition selection page.
    */
-  public function selectSelectionCondition(PageInterface $page, $display_variant_id) {
+  public function selectSelectionCondition(PageVariantInterface $page_variant) {
     $build = [
       '#theme' => 'links',
       '#links' => [],
     ];
-    $available_plugins = $this->conditionManager->getDefinitionsForContexts($page->getContexts());
+    $available_plugins = $this->conditionManager->getDefinitionsForContexts($page_variant->getContexts());
     foreach ($available_plugins as $selection_id => $selection_condition) {
       $build['#links'][$selection_id] = [
         'title' => $selection_condition['label'],
         'url' => Url::fromRoute('page_manager.selection_condition_add', [
-          'page' => $page->id(),
-          'display_variant_id' => $display_variant_id,
+          'page' => $page_variant->get('page'),
+          'page_variant' => $page_variant->id(),
           'condition_id' => $selection_id,
         ]),
         'attributes' => $this->getAjaxAttributes(),
@@ -275,19 +267,17 @@ class PageManagerController extends ControllerBase {
   }
 
   /**
-   * Presents a list of blocks to add to the display variant.
+   * Presents a list of blocks to add to the variant.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The current request.
-   * @param \Drupal\page_manager\PageInterface $page
+   * @param \Drupal\page_manager\PageVariantInterface $page_variant
    *   The page entity.
-   * @param string $display_variant_id
-   *   The display variant ID.
    *
    * @return array
    *   The block selection page.
    */
-  public function selectBlock(Request $request, PageInterface $page, $display_variant_id) {
+  public function selectBlock(Request $request, PageVariantInterface $page_variant) {
     // Add a section containing the available blocks to be added to the variant.
     $build = [
       '#type' => 'container',
@@ -297,7 +287,7 @@ class PageManagerController extends ControllerBase {
         ],
       ],
     ];
-    $available_plugins = $this->blockManager->getDefinitionsForContexts($page->getContexts());
+    $available_plugins = $this->blockManager->getDefinitionsForContexts($page_variant->getContexts());
     foreach ($available_plugins as $plugin_id => $plugin_definition) {
       // Make a section for each region.
       $category = $plugin_definition['category'];
@@ -314,9 +304,9 @@ class PageManagerController extends ControllerBase {
       // Add a link for each available block within each region.
       $build[$category_key]['content']['#links'][$plugin_id] = [
         'title' => $plugin_definition['admin_label'],
-        'url' => Url::fromRoute('page_manager.display_variant_add_block', [
-          'page' => $page->id(),
-          'display_variant_id' => $display_variant_id,
+        'url' => Url::fromRoute('page_manager.variant_add_block', [
+          'page' => $page_variant->get('page'),
+          'page_variant' => $page_variant->id(),
           'block_id' => $plugin_id,
           'region' => $request->query->get('region'),
         ]),
@@ -324,6 +314,27 @@ class PageManagerController extends ControllerBase {
       ];
     }
     return $build;
+  }
+
+  /**
+   * Build the page variant entity add form.
+   *
+   * @param \Drupal\page_manager\PageInterface $page
+   *   The page this page variant belongs to.
+   * @param string $variant_plugin_id
+   *   The variant plugin ID.
+   *
+   * @return array
+   *   The page variant entity add form.
+   */
+  public function addPageVariantEntityForm(PageInterface $page, $variant_plugin_id) {
+    // Create a page variant entity.
+    $entity = $this->entityTypeManager()->getStorage('page_variant')->create([
+      'page' => $page->id(),
+      'variant' => $variant_plugin_id,
+    ]);
+
+    return $this->entityFormBuilder()->getForm($entity, 'add');
   }
 
 }

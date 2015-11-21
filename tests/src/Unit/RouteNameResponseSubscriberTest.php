@@ -32,6 +32,7 @@ class RouteNameResponseSubscriberTest extends UnitTestCase {
 
     $route_name = 'the_route_name';
     $master_route_match = $this->prophesize(RouteMatchInterface::class);
+    $master_route_match->getParameter('base_route_name')->willReturn(NULL);
     $master_route_match->getRouteName()->willReturn($route_name);
     $current_route_match = $this->prophesize(StackedRouteMatchInterface::class);
     $current_route_match->getMasterRouteMatch()->willReturn($master_route_match->reveal());
@@ -51,12 +52,34 @@ class RouteNameResponseSubscriberTest extends UnitTestCase {
     $event = $this->buildEvent($response);
 
     $master_route_match = $this->prophesize(RouteMatchInterface::class);
+    $master_route_match->getParameter()->shouldNotBeCalled();
     $master_route_match->getRouteName()->shouldNotBeCalled();
     $current_route_match = $this->prophesize(StackedRouteMatchInterface::class);
     $current_route_match->getMasterRouteMatch()->willReturn($master_route_match->reveal());
 
     $subscriber = new RouteNameResponseSubscriber($current_route_match->reveal());
     $subscriber->onResponse($event);
+  }
+
+  /**
+   * @covers ::onResponse
+   */
+  public function testOnResponseCacheableWithBaseRouteName() {
+    $response = new CacheableResponse('');
+    $event = $this->buildEvent($response);
+
+    $route_name = 'the_route_name';
+    $master_route_match = $this->prophesize(RouteMatchInterface::class);
+    $master_route_match->getParameter('base_route_name')->willReturn($route_name);
+    $master_route_match->getRouteName()->shouldNotBeCalled();
+    $current_route_match = $this->prophesize(StackedRouteMatchInterface::class);
+    $current_route_match->getMasterRouteMatch()->willReturn($master_route_match->reveal());
+
+    $subscriber = new RouteNameResponseSubscriber($current_route_match->reveal());
+    $subscriber->onResponse($event);
+
+    $expected = ["page_manager_route_name:$route_name"];
+    $this->assertSame($expected, $response->getCacheableMetadata()->getCacheTags());
   }
 
   /**

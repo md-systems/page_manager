@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\page_manager\Form\DisplayVariantConfigureBlockFormBase.
+ * Contains \Drupal\page_manager\Form\VariantPluginConfigureBlockFormBase.
  */
 
 namespace Drupal\page_manager\Form;
@@ -12,28 +12,21 @@ use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
-use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 
 /**
- * Provides a base form for configuring a block as part of a display variant.
+ * Provides a base form for configuring a block as part of a variant.
  */
-abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
+abstract class VariantPluginConfigureBlockFormBase extends FormBase {
 
   use ContextAwarePluginAssignmentTrait;
 
   /**
    * The page entity.
    *
-   * @var \Drupal\page_manager\PageInterface
+   * @var \Drupal\page_manager\PageVariantInterface
    */
-  protected $page;
-
-  /**
-   * The display variant.
-   *
-   * @var \Drupal\ctools\Plugin\BlockVariantInterface
-   */
-  protected $displayVariant;
+  protected $pageVariant;
 
   /**
    * The plugin being configured.
@@ -64,11 +57,10 @@ abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, PageInterface $page = NULL, $display_variant_id = NULL, $block_id = NULL) {
-    $this->page = $page;
-    $this->displayVariant = $page->getVariant($display_variant_id);
+  public function buildForm(array $form, FormStateInterface $form_state, PageVariantInterface $page_variant = NULL, $block_id = NULL) {
+    $this->pageVariant = $page_variant;
     $this->block = $this->prepareBlock($block_id);
-    $form_state->set('display_variant_id', $display_variant_id);
+    $form_state->set('page_variant_id', $page_variant->id());
     $form_state->set('block_id', $this->block->getConfiguration()['uuid']);
 
     $form['#tree'] = TRUE;
@@ -80,13 +72,13 @@ abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
     $form['region'] = [
       '#title' => $this->t('Region'),
       '#type' => 'select',
-      '#options' => $this->displayVariant->getRegionNames(),
-      '#default_value' => $this->displayVariant->getRegionAssignment($this->block->getConfiguration()['uuid']),
+      '#options' => $this->getVariantPlugin()->getRegionNames(),
+      '#default_value' => $this->getVariantPlugin()->getRegionAssignment($this->block->getConfiguration()['uuid']),
       '#required' => TRUE,
     ];
 
     if ($this->block instanceof ContextAwarePluginInterface) {
-      $form['context_mapping'] = $this->addContextAssignmentElement($this->block, $this->page->getContexts());
+      $form['context_mapping'] = $this->addContextAssignmentElement($this->block, $this->pageVariant->getContexts());
     }
 
     $form['actions']['submit'] = [
@@ -101,10 +93,9 @@ abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    // The page might have been serialized, resulting in a new display variant
-    // collection. Refresh the display variant and block objects.
-    $this->displayVariant = $this->page->getVariant($form_state->get('display_variant_id'));
-    $this->block = $this->displayVariant->getBlock($form_state->get('block_id'));
+    // The page might have been serialized, resulting in a new variant
+    // collection. Refresh the block object.
+    $this->block = $this->getVariantPlugin()->getBlock($form_state->get('block_id'));
 
     $settings = (new FormState())->setValues($form_state->getValue('settings'));
     // Call the plugin validate handler.
@@ -128,13 +119,19 @@ abstract class DisplayVariantConfigureBlockFormBase extends FormBase {
       $this->block->setContextMapping($form_state->getValue('context_mapping', []));
     }
 
-    $this->displayVariant->updateBlock($this->block->getConfiguration()['uuid'], ['region' => $form_state->getValue('region')]);
-    $this->page->save();
+    $this->getVariantPlugin()->updateBlock($this->block->getConfiguration()['uuid'], ['region' => $form_state->getValue('region')]);
+    $this->pageVariant->save();
 
-    $form_state->setRedirect('page_manager.display_variant_edit', [
-      'page' => $this->page->id(),
-      'display_variant_id' => $this->displayVariant->id(),
-    ]);
+    $form_state->setRedirectUrl($this->pageVariant->toUrl('edit-form'));
+  }
+
+  /**
+   * Gets the variant plugin for this page variant entity.
+   *
+   * @return \Drupal\ctools\Plugin\BlockVariantInterface
+   */
+  protected function getVariantPlugin() {
+    return $this->pageVariant->getVariantPlugin();
   }
 
 }

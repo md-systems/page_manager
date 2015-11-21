@@ -7,8 +7,10 @@
 
 namespace Drupal\page_manager\Form;
 
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\Entity;
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\EntityTypeRepositoryInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\page_manager\PageInterface;
@@ -27,13 +29,6 @@ abstract class StaticContextFormBase extends FormBase {
   protected $page;
 
   /**
-   * The entity manager.
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
-   */
-  protected $entityManager;
-
-  /**
    * The static context configuration.
    *
    * @var array
@@ -41,13 +36,40 @@ abstract class StaticContextFormBase extends FormBase {
   protected $staticContext;
 
   /**
+   * The entity repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
+   * The entity type repository.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeRepositoryInterface
+   */
+  protected $entityTypeRepository;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * Construct a new StaticContextFormBase.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeRepositoryInterface $entity_type_repository
+   *   The entity type repository.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    */
-  public function __construct(EntityManagerInterface $entity_manager) {
-    $this->entityManager = $entity_manager;
+  public function __construct(EntityRepositoryInterface $entity_repository, EntityTypeRepositoryInterface $entity_type_repository, EntityTypeManagerInterface $entity_type_manager) {
+    $this->entityRepository = $entity_repository;
+    $this->entityTypeRepository = $entity_type_repository;
+    $this->entityTypeManager = $entity_type_manager;
   }
 
   /**
@@ -55,7 +77,9 @@ abstract class StaticContextFormBase extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager')
+      $container->get('entity.repository'),
+      $container->get('entity_type.repository'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -102,7 +126,7 @@ abstract class StaticContextFormBase extends FormBase {
     $form['entity_type'] = [
       '#type' => 'select',
       '#title' => $this->t('Entity type'),
-      '#options' => $this->entityManager->getEntityTypeLabels(TRUE),
+      '#options' => $this->entityTypeRepository->getEntityTypeLabels(TRUE),
       '#limit_validation_errors' => array(array('entity_type')),
       '#submit' => ['::rebuildSubmit'],
       '#executes_submit_callback' => TRUE,
@@ -117,14 +141,14 @@ abstract class StaticContextFormBase extends FormBase {
     if ($form_state->hasValue('entity_type')) {
       $entity_type = $form_state->getValue('entity_type');
       if ($this->staticContext['value']) {
-        $entity = $this->entityManager->loadEntityByUuid($entity_type, $this->staticContext['value']);
+        $entity = $this->entityRepository->loadEntityByUuid($entity_type, $this->staticContext['value']);
       }
     }
     elseif (!empty($this->staticContext['type'])) {
       list(, $entity_type) = explode(':', $this->staticContext['type']);
-      $entity = $this->entityManager->loadEntityByUuid($entity_type, $this->staticContext['value']);
+      $entity = $this->entityRepository->loadEntityByUuid($entity_type, $this->staticContext['value']);
     }
-    elseif ($this->entityManager->hasDefinition('node')) {
+    elseif ($this->entityTypeManager->hasDefinition('node')) {
       $entity_type = 'node';
     }
     else {
@@ -172,7 +196,7 @@ abstract class StaticContextFormBase extends FormBase {
     // Set the submission message.
     drupal_set_message($this->submitMessageText());
 
-    $form_state->setRedirectUrl($this->page->urlInfo('edit-form'));
+    $form_state->setRedirectUrl($this->page->toUrl('edit-form'));
   }
 
   /**
@@ -190,7 +214,7 @@ abstract class StaticContextFormBase extends FormBase {
     if (!isset($selection)) {
       return NULL;
     }
-    return $this->entityManager->getStorage($entity_type)->load($selection);
+    return $this->entityTypeManager->getStorage($entity_type)->load($selection);
   }
 
   /**

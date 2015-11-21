@@ -14,12 +14,6 @@ page_manager.page.*:
     path:
       type: string
       label: 'Page path'
-    display_variants:
-      type: sequence
-      label: 'Display variants'
-      sequence:
-        - type: display_variant.plugin.[id]
-          label: 'Display variant'
     access_logic:
       type: string
       label: 'Access logic'
@@ -46,6 +40,42 @@ page_manager.page.*:
               type: string
               label: 'Context value'
 
+page_manager.page_variant.*:
+  type: config_entity
+  label: 'Page variant configuration'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'
+    weight:
+      type: integer
+      label: 'Weight'
+    uuid:
+      type: string
+      label: 'UUID'
+    variant:
+      type: string
+      label: 'Display variant'
+    variant_settings:
+      type: display_variant.plugin.[%parent.variant]
+    page:
+      type: string
+      label: 'Parent page'
+    selection_criteria:
+      type: sequence
+      label: 'Selection criteria'
+      sequence:
+        - type: condition.plugin.[id]
+          label: 'Selection condition'
+    selection_logic:
+      type: string
+      label: 'Selection logic'
+    contexts:
+      type: mapping
+
 page_manager.block_plugin.*:
   type: block.settings.[id]
   mapping:
@@ -66,7 +96,7 @@ page_manager.block_plugin.*:
 
 display_variant.plugin.block_display:
   type: display_variant.plugin
-  label: 'Block display variant'
+  label: 'Block variant plugin'
   mapping:
     selection_logic:
       type: string
@@ -88,7 +118,7 @@ display_variant.plugin.block_display:
 
 display_variant.plugin.http_status_code:
   type: display_variant.plugin
-  label: 'HTTP status code display variant'
+  label: 'HTTP status code variant plugin'
   mapping:
     status_code:
       type: integer

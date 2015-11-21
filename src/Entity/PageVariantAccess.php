@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\page_manager\Entity\PageAccess.
+ * Contains \Drupal\page_manager\Entity\PageVariantAccess.
  */
 
 namespace Drupal\page_manager\Entity;
@@ -13,15 +13,15 @@ use Drupal\Core\Entity\EntityAccessControlHandler;
 use Drupal\Core\Entity\EntityHandlerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
+use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Defines the access control handler for the page entity type.
+ * Defines the access control handler for the page variant entity type.
  */
-class PageAccess extends EntityAccessControlHandler implements EntityHandlerInterface {
+class PageVariantAccess extends EntityAccessControlHandler implements EntityHandlerInterface {
 
   use ConditionAccessResolverTrait;
 
@@ -68,22 +68,20 @@ class PageAccess extends EntityAccessControlHandler implements EntityHandlerInte
    * {@inheritdoc}
    */
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-    /** @var \Drupal\page_manager\PageInterface $entity */
-    if ($operation == 'view') {
-      if (!$entity->status()) {
-        return AccessResult::forbidden()->addCacheableDependency($entity);
-      }
+    if ($operation === 'view') {
+      /** @var \Drupal\page_manager\PageVariantInterface $entity */
+      $contexts = $entity->getContexts();
 
-      $conditions = $entity->getAccessConditions();
-      $contexts = $entity->getExecutable()->getContexts();
+      $conditions = $entity->getSelectionConditions();
       foreach ($conditions as $condition) {
         if ($condition instanceof ContextAwarePluginInterface) {
           $this->contextHandler()->applyContextMapping($condition, $contexts);
         }
       }
-      return AccessResult::allowedIf($this->resolveConditions($conditions, $entity->getAccessLogic()));
+      return AccessResult::allowedIf($this->resolveConditions($conditions, $entity->getSelectionLogic()));
     }
     return parent::checkAccess($entity, $operation, $account);
+
   }
 
 }

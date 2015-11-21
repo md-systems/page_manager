@@ -11,7 +11,7 @@ use Drupal\page_manager\PageInterface;
 use Drupal\Core\Condition\ConditionPluginCollection;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\page_manager\Plugin\VariantAwareTrait;
+use Drupal\page_manager\PageVariantInterface;
 
 /**
  * Defines a Page entity class.
@@ -22,7 +22,6 @@ use Drupal\page_manager\Plugin\VariantAwareTrait;
  *   handlers = {
  *     "access" = "Drupal\page_manager\Entity\PageAccess",
  *     "list_builder" = "Drupal\page_manager\Entity\PageListBuilder",
- *     "view_builder" = "Drupal\page_manager\Entity\PageViewBuilder",
  *     "form" = {
  *       "add" = "Drupal\page_manager\Form\PageAddForm",
  *       "edit" = "Drupal\page_manager\Form\PageEditForm",
@@ -40,9 +39,9 @@ use Drupal\page_manager\Plugin\VariantAwareTrait;
  *     "label",
  *     "use_admin_theme",
  *     "path",
- *     "display_variants",
  *     "access_logic",
  *     "access_conditions",
+ *     "static_context",
  *   },
  *   links = {
  *     "collection" = "/admin/structure/page_manager",
@@ -55,8 +54,6 @@ use Drupal\page_manager\Plugin\VariantAwareTrait;
  * )
  */
 class Page extends ConfigEntityBase implements PageInterface {
-
-  use VariantAwareTrait;
 
   /**
    * The ID of the page entity.
@@ -80,11 +77,11 @@ class Page extends ConfigEntityBase implements PageInterface {
   protected $path;
 
   /**
-   * The configuration of the display variants.
+   * The page variant entities.
    *
-   * @var array
+   * @var \Drupal\page_manager\PageVariantInterface[].
    */
-  protected $display_variants = [];
+  protected $variants;
 
   /**
    * The configuration of access conditions.
@@ -154,27 +151,6 @@ class Page extends ConfigEntityBase implements PageInterface {
   /**
    * {@inheritdoc}
    */
-  public function toArray() {
-    $properties = parent::toArray();
-    $names = [
-      'id',
-      'label',
-      'path',
-      'display_variants',
-      'access_conditions',
-      'access_logic',
-      'use_admin_theme',
-      'static_context',
-    ];
-    foreach ($names as $name) {
-      $properties[$name] = $this->get($name);
-    }
-    return $properties;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getPath() {
     return $this->path;
   }
@@ -191,14 +167,6 @@ class Page extends ConfigEntityBase implements PageInterface {
    */
   public function postCreate(EntityStorageInterface $storage) {
     parent::postCreate($storage);
-    // Ensure there is at least one display variant.
-    if (!count($this->getVariants())) {
-      $this->addVariant([
-        'id' => 'http_status_code',
-        'label' => 'Default',
-        'weight' => 10,
-      ]);
-    }
   }
 
   /**
@@ -228,20 +196,12 @@ class Page extends ConfigEntityBase implements PageInterface {
   }
 
   /**
-   * Wraps the config factory.
+   * Wraps the entity storage for page variants.
    *
-   * @return \Drupal\Core\Config\ConfigFactoryInterface
-   *   The config factory.
+   * @return \Drupal\Core\Entity\EntityStorageInterface
    */
-  protected function configFactory() {
-    return \Drupal::service('config.factory');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function getVariantConfig() {
-    return $this->get('display_variants');
+  protected function variantStorage() {
+    return \Drupal::service('entity_type.manager')->getStorage('page_variant');
   }
 
   /**
@@ -249,7 +209,6 @@ class Page extends ConfigEntityBase implements PageInterface {
    */
   public function getPluginCollections() {
     return [
-      'display_variants' => $this->getVariants(),
       'access_conditions' => $this->getAccessConditions(),
     ];
   }
@@ -338,9 +297,57 @@ class Page extends ConfigEntityBase implements PageInterface {
   /**
    * {@inheritdoc}
    */
-  public function isFallbackPage() {
-    $fallback_page = $this->configFactory()->get('page_manager.settings')->get('fallback_page');
-    return $this->id() == $fallback_page;
+  public function addVariant(PageVariantInterface $variant) {
+    $this->variants[$variant->id()] = $variant;
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getVariant($variant_id) {
+    $variants = $this->getVariants();
+    if (!isset($variants[$variant_id])) {
+      throw new \UnexpectedValueException('The requested variant does not exist or is not associated with this page');
+    }
+    return $variants[$variant_id];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function removeVariant($variant_id) {
+    $this->getVariant($variant_id)->delete();
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getVariants() {
+    if (!isset($this->variants)) {
+      $this->variants = [];
+      /** @var \Drupal\page_manager\PageVariantInterface $variant */
+      foreach ($this->variantStorage()->loadByProperties(['page' => $this->id()]) as $variant) {
+        $this->variants[$variant->id()] = $variant;
+      }
+      // Suppress errors because of https://bugs.php.net/bug.php?id=50688.
+      @uasort($this->variants, [$this, 'variantSortHelper']);
+    }
+    return $this->variants;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function variantSortHelper($a, $b) {
+    $a_weight = $a->getWeight();
+    $b_weight = $b->getWeight();
+    if ($a_weight == $b_weight) {
+      return 0;
+    }
+
+    return ($a_weight < $b_weight) ? -1 : 1;
   }
 
   /**
@@ -352,7 +359,7 @@ class Page extends ConfigEntityBase implements PageInterface {
     // Avoid serializing plugin collections and the page executable as they
     // might contain references to a lot of objects including the container.
     $unset_vars = [
-      'variantCollection' => 'display_variants',
+      'variants' => NULL,
       'accessConditionCollection' => 'access_variants',
       'executable' => NULL,
     ];

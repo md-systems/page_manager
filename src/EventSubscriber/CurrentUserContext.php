@@ -8,10 +8,10 @@
 namespace Drupal\page_manager\EventSubscriber;
 
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Plugin\Context\ContextDefinition;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\page_manager\Event\PageManagerContextEvent;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Plugin\Context\Context;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\page_manager\Event\PageManagerEvents;
@@ -43,12 +43,12 @@ class CurrentUserContext implements EventSubscriberInterface {
    *
    * @param \Drupal\Core\Session\AccountInterface $account
    *   The current account.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    */
-  public function __construct(AccountInterface $account, EntityManagerInterface $entity_manager) {
+  public function __construct(AccountInterface $account, EntityTypeManagerInterface $entity_type_manager) {
     $this->account = $account;
-    $this->userStorage = $entity_manager->getStorage('user');
+    $this->userStorage = $entity_type_manager->getStorage('user');
   }
 
   /**

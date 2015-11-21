@@ -82,4 +82,32 @@ class RouteParamContextTest extends PageContextTestBase {
     $route_param_context->onPageContext($this->event);
   }
 
+  /**
+   * @covers ::onPageContext
+   */
+  public function testOnPageContextEmpty() {
+    $collection = new RouteCollection();
+    $route_provider = $this->prophesize(RouteProviderInterface::class);
+    $route_provider->getRoutesByPattern('/test_route')->willReturn($collection);
+
+    $request = new Request();
+    $request_stack = new RequestStack();
+    $request_stack->push($request);
+
+    $page = $this->prophesize(PageInterface::class);
+    $this->executable->expects($this->once())
+      ->method('getPage')
+      ->will($this->returnValue($page->reveal()));
+    $page->getPath()->willReturn('/test_route');
+
+    $this->executable->expects($this->never())
+      ->method('addContext');
+
+    // Set up a request with one of the expected parameters as an attribute.
+    $request->attributes->add(['foo' => 'banana']);
+
+    $route_param_context = new RouteParamContext($route_provider->reveal(), $request_stack);
+    $route_param_context->onPageContext($this->event);
+  }
+
 }

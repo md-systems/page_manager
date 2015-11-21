@@ -7,8 +7,8 @@
 
 namespace Drupal\Tests\page_manager\Unit;
 
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
 use Drupal\Core\Plugin\Context\Context;
 use Drupal\Core\Session\AccountInterface;
@@ -54,10 +54,10 @@ class CurrentUserContextTest extends PageContextTestBase {
     $user_storage = $this->prophesize(EntityStorageInterface::class);
     $user_storage->load(1)->willReturn($user->reveal());
 
-    $entity_manager = $this->prophesize(EntityManagerInterface::class);
-    $entity_manager->getStorage('user')->willReturn($user_storage->reveal());
+    $entity_type_manager = $this->prophesize(EntityTypeManagerInterface::class);
+    $entity_type_manager->getStorage('user')->willReturn($user_storage->reveal());
 
-    $route_param_context = new CurrentUserContext($account->reveal(), $entity_manager->reveal());
+    $route_param_context = new CurrentUserContext($account->reveal(), $entity_type_manager->reveal());
     $route_param_context->onPageContext($this->event);
   }
 

@@ -10,26 +10,19 @@ namespace Drupal\page_manager\Form;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Url;
-use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 
 /**
- * @todo.
+ * Provides a form for deleting a selection condition.
  */
 class SelectionConditionDeleteForm extends ConfirmFormBase {
 
   /**
    * The page entity this selection condition belongs to.
    *
-   * @var \Drupal\page_manager\PageInterface
+   * @var \Drupal\page_manager\PageVariantInterface
    */
-  protected $page;
-
-  /**
-   * The display variant.
-   *
-   * @var \Drupal\ctools\Plugin\ConditionVariantInterface
-   */
-  protected $displayVariant;
+  protected $pageVariant;
 
   /**
    * The selection condition used by this form.
@@ -56,10 +49,7 @@ class SelectionConditionDeleteForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('page_manager.display_variant_edit', [
-      'page' => $this->page->id(),
-      'display_variant_id' => $this->displayVariant->id(),
-    ]);
+    return $this->pageVariant->toUrl('edit-form');
   }
 
   /**
@@ -72,10 +62,9 @@ class SelectionConditionDeleteForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, PageInterface $page = NULL, $display_variant_id = NULL, $condition_id = NULL) {
-    $this->page = $page;
-    $this->displayVariant = $this->page->getVariant($display_variant_id);
-    $this->selectionCondition = $this->displayVariant->getSelectionCondition($condition_id);
+  public function buildForm(array $form, FormStateInterface $form_state, PageVariantInterface $page_variant = NULL, $condition_id = NULL) {
+    $this->pageVariant = $page_variant;
+    $this->selectionCondition = $page_variant->getSelectionCondition($condition_id);
     return parent::buildForm($form, $form_state);
   }
 
@@ -83,8 +72,8 @@ class SelectionConditionDeleteForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->displayVariant->removeSelectionCondition($this->selectionCondition->getConfiguration()['uuid']);
-    $this->page->save();
+    $this->pageVariant->removeSelectionCondition($this->selectionCondition->getConfiguration()['uuid']);
+    $this->pageVariant->save();
     drupal_set_message($this->t('The selection condition %name has been removed.', ['%name' => $this->selectionCondition->getPluginDefinition()['label']]));
     $form_state->setRedirectUrl($this->getCancelUrl());
   }

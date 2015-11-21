@@ -8,7 +8,6 @@
 namespace Drupal\page_manager;
 
 use Drupal\Component\Plugin\Context\ContextInterface;
-use Drupal\Core\Display\ContextAwareVariantInterface;
 use Drupal\page_manager\Event\PageManagerContextEvent;
 use Drupal\page_manager\Event\PageManagerEvents;
 
@@ -23,13 +22,6 @@ class PageExecutable implements PageExecutableInterface {
    * @var \Drupal\page_manager\PageInterface
    */
   protected $page;
-
-  /**
-   * The selected display variant.
-   *
-   * @var \Drupal\Core\Display\VariantInterface|null
-   */
-  protected $selectedDisplayVariant;
 
   /**
    * An array of collected contexts.
@@ -53,24 +45,6 @@ class PageExecutable implements PageExecutableInterface {
    */
   public function getPage() {
     return $this->page;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function selectDisplayVariant() {
-    if (!$this->selectedDisplayVariant) {
-      foreach ($this->page->getVariants() as $display_variant) {
-        if ($display_variant instanceof ContextAwareVariantInterface) {
-          $display_variant->setContexts($this->getContexts());
-        }
-        if ($display_variant->access()) {
-          $this->selectedDisplayVariant = $display_variant;
-          break;
-        }
-      }
-    }
-    return $this->selectedDisplayVariant;
   }
 
   /**

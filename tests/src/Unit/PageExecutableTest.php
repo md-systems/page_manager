@@ -8,7 +8,6 @@
 namespace Drupal\Tests\page_manager\Unit;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
-use Drupal\Core\Display\VariantInterface;
 use Drupal\Core\Plugin\Context\Context;
 use Drupal\Core\Plugin\Context\ContextDefinition;
 use Drupal\page_manager\Event\PageManagerContextEvent;
@@ -54,24 +53,6 @@ class PageExecutableTest extends UnitTestCase {
    */
   public function testGetPage() {
     $this->assertSame($this->page->reveal(), $this->exectuable->getPage());
-  }
-
-  /**
-   * @covers ::selectDisplayVariant
-   */
-  public function testSelectDisplayVariant() {
-    $display_variant1 = $this->prophesize(VariantInterface::class);
-    $display_variant1->access()->willReturn(FALSE);
-
-    $display_variant2 = $this->prophesize(VariantInterface::class);
-    $display_variant2->access()->willReturn(TRUE);
-
-    $this->page->getVariants()->willReturn([
-      'variant1' => $display_variant1->reveal(),
-      'variant2' => $display_variant2->reveal(),
-    ]);
-
-    $this->assertSame($display_variant2->reveal(), $this->exectuable->selectDisplayVariant());
   }
 
   /**

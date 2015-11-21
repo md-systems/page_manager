@@ -23,7 +23,7 @@ use Drupal\Tests\UnitTestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
- * Tests the block display variant plugin.
+ * Tests the block variant plugin.
  *
  * @coversDefaultClass \Drupal\page_manager\Plugin\DisplayVariant\PageBlockDisplayVariant
  *
@@ -50,7 +50,7 @@ class PageBlockDisplayVariantTest extends UnitTestCase {
     $uuid_generator = $this->prophesize(UuidInterface::class);
     $token = $this->prophesize(Token::class);
 
-    $display_variant = new PageBlockDisplayVariant([], '', [], $context_handler->reveal(), $account->reveal(), $uuid_generator->reveal(), $token->reveal());
+    $variant_plugin = new PageBlockDisplayVariant([], '', [], $context_handler->reveal(), $account->reveal(), $uuid_generator->reveal(), $token->reveal());
 
     // Empty block.
     $expected_build = [
@@ -76,7 +76,7 @@ class PageBlockDisplayVariantTest extends UnitTestCase {
       ],
     ];
 
-    $build = $display_variant->buildBlock($build);
+    $build = $variant_plugin->buildBlock($build);
 
     // Assert that cacheability metadata is merged.
     $this->assertSame($expected_build, $build);
@@ -142,7 +142,7 @@ class PageBlockDisplayVariantTest extends UnitTestCase {
     $token = $this->getMockBuilder(Token::class)
       ->disableOriginalConstructor()
       ->getMock();
-    $display_variant = $this->getMockBuilder(PageBlockDisplayVariant::class)
+    $variant_plugin = $this->getMockBuilder(PageBlockDisplayVariant::class)
       ->setConstructorArgs([['page_title' => $page_title, 'uuid' => 'UUID'], 'test', [], $context_handler->reveal(), $account->reveal(), $uuid_generator->reveal(), $token])
       ->setMethods(['getBlockCollection', 'renderPageTitle'])
       ->getMock();
@@ -150,10 +150,10 @@ class PageBlockDisplayVariantTest extends UnitTestCase {
     $page = $this->prophesize(PageInterface::class);
     $page->id()->willReturn('page_id');
 
-    $display_variant->expects($this->once())
+    $variant_plugin->expects($this->once())
       ->method('getBlockCollection')
       ->willReturn($block_collection);
-    $display_variant->expects($this->once())
+    $variant_plugin->expects($this->once())
       ->method('renderPageTitle')
       ->with($page_title)
       ->willReturn($page_title);
@@ -180,9 +180,9 @@ class PageBlockDisplayVariantTest extends UnitTestCase {
 
     // Build the variant and ensure that pre_render is set only for the first
     // block.
-    $build = $display_variant->build();
-    $build = $display_variant->buildRegions($build);
-    $this->assertSame([$display_variant, 'buildBlock'], $build['top']['block1']['#pre_render'][0]);
+    $build = $variant_plugin->build();
+    $build = $variant_plugin->buildRegions($build);
+    $this->assertSame([$variant_plugin, 'buildBlock'], $build['top']['block1']['#pre_render'][0]);
     $this->assertTrue(empty($build['top']['block2']));
     $this->assertSame($expected_cache_block1, $build['top']['block1']['#cache']);
     $this->assertSame($expected_cache_page, $build['#cache']);
@@ -191,7 +191,7 @@ class PageBlockDisplayVariantTest extends UnitTestCase {
     $block1->build()->willReturn([
       '#markup' => 'block1_build_value',
     ]);
-    $block1_build = $display_variant->buildBlock($build['top']['block1']);
+    $block1_build = $variant_plugin->buildBlock($build['top']['block1']);
     $this->assertSame(['#markup' => 'block1_build_value'], $block1_build['content']);
   }
 
@@ -206,17 +206,17 @@ class PageBlockDisplayVariantTest extends UnitTestCase {
     $uuid_generator = $this->prophesize(UuidInterface::class);
     $token = $this->prophesize(Token::class);
 
-    $display_variant = new PageBlockDisplayVariant([], '', [], $context_handler->reveal(), $account->reveal(), $uuid_generator->reveal(), $token->reveal());
+    $variant_plugin = new PageBlockDisplayVariant([], '', [], $context_handler->reveal(), $account->reveal(), $uuid_generator->reveal(), $token->reveal());
 
     $values = ['page_title' => "Go hang a salami, I'm a lasagna hog!"];
 
     $form = [];
     $form_state = (new FormState())->setValues($values);
-    $display_variant->submitConfigurationForm($form, $form_state);
+    $variant_plugin->submitConfigurationForm($form, $form_state);
 
-    $property = new \ReflectionProperty($display_variant, 'configuration');
+    $property = new \ReflectionProperty($variant_plugin, 'configuration');
     $property->setAccessible(TRUE);
-    $this->assertSame($values['page_title'], $property->getValue($display_variant)['page_title']);
+    $this->assertSame($values['page_title'], $property->getValue($variant_plugin)['page_title']);
   }
 
 }
