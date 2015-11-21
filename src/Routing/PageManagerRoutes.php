@@ -89,6 +89,8 @@ class PageManagerRoutes extends RouteSubscriberBase {
         $route_name = "page_manager.page_view_$entity_id";
         $path = $entity->getPath();
 
+        $requirements['_entity_access'] = 'page_manager_page.view';
+
         // Replace % placeholders with proper route slugs ("{arg}") and set
         // parameter types.
         $bits = explode('/', $path);
