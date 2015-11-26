@@ -32,9 +32,7 @@ class PageBlockDisplayVariant extends BlockDisplayVariant {
     // Set default page cache keys that include the display.
     $build['#cache']['keys'] = [
       'page_manager_block_display',
-      // The UUID of this display.
-      // @todo should have an API for this?
-      $this->configuration['uuid'],
+      $this->id(),
     ];
     $build['#pre_render'][] = [$this, 'buildRegions'];
     return $build;
@@ -80,7 +78,7 @@ class PageBlockDisplayVariant extends BlockDisplayVariant {
           '#block_plugin' => $block,
           '#pre_render' => [[$this, 'buildBlock']],
           '#cache' => [
-            'keys' => ['page_manager_block_display', $this->configuration['uuid'], 'block', $block_id],
+            'keys' => ['page_manager_block_display', $this->id(), 'block', $block_id],
             // Each block needs cache tags of the page and the block plugin, as
             // only the page is a config entity that will trigger cache tag
             // invalidations in case of block configuration changes.
@@ -159,6 +157,11 @@ class PageBlockDisplayVariant extends BlockDisplayVariant {
       '#default_value' => $this->configuration['page_title'] ?: '',
     ];
 
+    $form['uuid'] = [
+      '#type' => 'value',
+      '#value' => $this->configuration['uuid'] ? : $this->uuidGenerator->generate(),
+    ];
+
     return $form;
   }
 
@@ -170,6 +173,9 @@ class PageBlockDisplayVariant extends BlockDisplayVariant {
 
     if ($form_state->hasValue('page_title')) {
       $this->configuration['page_title'] = $form_state->getValue('page_title');
+    }
+    if ($form_state->hasValue('uuid')) {
+      $this->configuration['uuid'] = $form_state->getValue('uuid');
     }
   }
 

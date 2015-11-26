@@ -53,15 +53,8 @@ class PageNodeSelectionTest extends WebTestBase {
     $this->assertText($node2->label());
     $this->assertTitle($node2->label() . ' | Drupal');
 
-    // Create a new page entity to take over node pages.
-    $edit = [
-      'label' => 'Node View',
-      'id' => 'node_view',
-      'path' => 'node/%',
-    ];
-    $this->drupalPostForm('admin/structure/page_manager/add', $edit, 'Save');
-
-    // Create a new variant to always return 404.
+    // Create a new variant to always return 404, the node_view page exists by
+    // default.
     $edit = [
       'id' => 'http_status_code',
       'variant_settings[status_code]' => 404,
@@ -109,16 +102,9 @@ class PageNodeSelectionTest extends WebTestBase {
     ];
     $this->drupalPostForm(NULL, $edit, 'Save');
 
-    /** @var \Drupal\page_manager\PageInterface $page */
-    $page = Page::load('node_view');
-    foreach ($page->getVariants() as $block_variant_uuid => $block_variant) {
-      if ($block_variant->label() == 'First') {
-        break;
-      }
-    }
-    // Set the weight of the block_page variant to -10.
+    // Set the weight of block_page.
     $edit = [
-      'variants[' . $block_variant_uuid . '][weight]' => -10,
+      'variants[block_page_first][weight]' => -10,
     ];
     $this->drupalPostForm(NULL, $edit, 'Save');
 
