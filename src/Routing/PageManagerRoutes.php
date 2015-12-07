@@ -122,6 +122,7 @@ class PageManagerRoutes extends RouteSubscriberBase {
             '_title' => $entity->label(),
             'page_manager_page_variant' => $variant_id,
             'page_manager_page' => $page_id,
+            'page_manager_page_variant_weight' => $variant->getWeight(),
             // When adding multiple variants, the variant ID is added to the
             // route name. In order to convey the base route name for this set
             // of variants, add it as a parameter.

@@ -79,40 +79,65 @@ class VariantRouteFilter implements RouteFilterInterface {
     // Store the unaltered request attributes.
     $original_attributes = $request->attributes->all();
 
-    $page_manager_route_found = FALSE;
-    foreach ($collection as $name => $route) {
-      $attributes = $this->getRequestAttributes($route, $name, $request);
+    // First get all routes and sort them by variant weight.
+    $routes = $collection->all();
+    uasort($routes, [$this, 'routeWeightSort']);
 
+    // Find the first route that is accessible.
+    $acccessible_route = NULL;
+    foreach ($routes as $name => $route) {
+      $attributes = $this->getRequestAttributes($route, $name, $request);
       // Add the enhanced attributes to the request.
       $request->attributes->add($attributes);
-
       if ($page_variant_id = $route->getDefault('page_manager_page_variant')) {
-        // If a page manager route was already found, remove this one from the
-        // collection.
-        if ($page_manager_route_found) {
-          $collection->remove($name);
+        if ($this->checkPageVariantAccess($page_variant_id)) {
+          // Access granted, use this route. Do not restore request attributes
+          // but keep those from this route by breaking out.
+          $acccessible_route = $route;
+          break;
         }
-        elseif ($this->checkPageVariantAccess($page_variant_id)) {
-          // Mark that a valid page manager route was found.
-          $page_manager_route_found = TRUE;
-          // Replace the original attributes with the newly processed attributes.
-          $original_attributes = $request->attributes->all();
-        }
-        else {
-          // Remove routes for variants that fail access.
+      }
+
+      // Restore the original request attributes, this must be done in the loop
+      // or the request attributes will not be calculated correctly for the
+      // next route.
+      $request->attributes->replace($original_attributes);
+    }
+
+    foreach ($collection as $name => $route) {
+      if ($route->getDefault('page_manager_page_variant')) {
+        if ($acccessible_route !== $route) {
+          // Remove all other page manager routes.
           $collection->remove($name);
         }
       }
       else {
-        // If this route has no page variant, move it to the end of the list.
+        // This is not page manager route, move it to the end of the collection,
+        // those will only be used if there is no accessible variant route.
         $collection->add($name, $route);
       }
-
-      // Restore the original request attributes.
-      $request->attributes->replace($original_attributes);
     }
 
     return $collection;
+  }
+
+  /**
+   * Sort callback for routes based on the variant weight.
+   */
+  public function routeWeightSort($a, $b) {
+    $a_weight = $a->getDefault('page_manager_page_variant_weight');
+    $b_weight = $b->getDefault('page_manager_page_variant_weight');
+    if ($a_weight === $b_weight) {
+      return 0;
+    }
+    elseif ($a_weight === NULL) {
+      return 1;
+    }
+    elseif ($b_weight === NULL) {
+      return -1;
+    }
+
+    return ($a_weight < $b_weight) ? -1 : 1;
   }
 
   /**

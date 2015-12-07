@@ -12,6 +12,7 @@ use Drupal\Core\Config\Entity\ConfigEntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\RouteBuildEvent;
 use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 use Drupal\page_manager\Routing\PageManagerRoutes;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\Routing\Route;
@@ -85,8 +86,11 @@ class PageManagerRoutesTest extends UnitTestCase {
       ->willReturn('/page1')
       ->shouldBeCalled();
     $page1->id()->willReturn('page1');
+
+    $variant1 = $this->prophesize(PageVariantInterface::class);
+    $variant1->getWeight()->willReturn(0);
     $page1->getVariants()
-      ->willReturn(['variant1' => 'variant1']);
+      ->willReturn(['variant1' => $variant1->reveal()]);
     $page1->label()
       ->willReturn('Page label')
       ->shouldBeCalled();
@@ -122,6 +126,7 @@ class PageManagerRoutesTest extends UnitTestCase {
       '_title' => 'Page label',
       'page_manager_page_variant' => 'variant1',
       'page_manager_page' => 'page1',
+      'page_manager_page_variant_weight' => 0,
       'base_route_name' => 'page_manager.page_view_page1',
     ];
     $expected_requirements = [
@@ -210,8 +215,10 @@ class PageManagerRoutesTest extends UnitTestCase {
     $page->getPath()
       ->willReturn($page_path)
       ->shouldBeCalled();
+    $variant1 = $this->prophesize(PageVariantInterface::class);
+    $variant1->getWeight()->willReturn(0);
     $page->getVariants()
-      ->willReturn(['variant1' => 'variant1']);
+      ->willReturn(['variant1' => $variant1->reveal()]);
     $page->id()->willReturn('page1');
     $page->label()->willReturn(NULL);
     $page->usesAdminTheme()->willReturn(FALSE);
@@ -238,6 +245,7 @@ class PageManagerRoutesTest extends UnitTestCase {
       '_title' => NULL,
       'page_manager_page_variant' => 'variant1',
       'page_manager_page' => 'page1',
+      'page_manager_page_variant_weight' => 0,
       'base_route_name' => $route_name,
     ];
     $expected_requirements = $requirements;

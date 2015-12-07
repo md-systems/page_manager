@@ -199,10 +199,11 @@ class VariantRouteFilterTest extends UnitTestCase {
     $route_collection = new RouteCollection();
     $request = new Request();
 
-    $route1 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_1']);
-    $route2 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_2']);
-    $route_collection->add('route_1', $route1);
+    // Add route2 first to ensure that the routes are sorted by weight.
+    $route1 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_1', 'page_manager_page_variant_weight' => 1]);
+    $route2 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_2', 'page_manager_page_variant_weight' => 2]);
     $route_collection->add('route_2', $route2);
+    $route_collection->add('route_1', $route1);
 
     $page_variant = $this->prophesize(PageVariantInterface::class);
     $page_variant->access('view')->willReturn(TRUE);
@@ -216,6 +217,7 @@ class VariantRouteFilterTest extends UnitTestCase {
     $this->assertSame($expected, $result->all());
     $expected_attributes = [
       'page_manager_page_variant' => 'variant_1',
+      'page_manager_page_variant_weight' => 1,
       '_route_object' => $route1,
       '_route' => 'route_1',
     ];
@@ -229,10 +231,10 @@ class VariantRouteFilterTest extends UnitTestCase {
     $route_collection = new RouteCollection();
     $request = new Request();
 
-    $route1 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_1']);
-    $route2 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_2']);
-    $route_collection->add('route_1', $route1);
+    $route1 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_1', 'page_manager_page_variant_weight' => 1]);
+    $route2 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_2', 'page_manager_page_variant_weight' => 2]);
     $route_collection->add('route_2', $route2);
+    $route_collection->add('route_1', $route1);
 
     $page_variant1 = $this->prophesize(PageVariantInterface::class);
     $page_variant1->access('view')->willReturn(FALSE);
@@ -248,6 +250,7 @@ class VariantRouteFilterTest extends UnitTestCase {
     $this->assertSame($expected, $result->all());
     $expected_attributes = [
       'page_manager_page_variant' => 'variant_2',
+      'page_manager_page_variant_weight' => 2,
       '_route_object' => $route2,
       '_route' => 'route_2',
     ];
@@ -264,13 +267,14 @@ class VariantRouteFilterTest extends UnitTestCase {
     $route_collection = new RouteCollection();
     $request = new Request();
 
+    // Add routes in different order to test sorting.
     $route1 = new Route('/path/with/{slug}');
-    $route2 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant1']);
-    $route3 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant2']);
+    $route2 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant1', 'page_manager_page_variant_weight' => 1]);
+    $route3 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant2', 'page_manager_page_variant_weight' => 2]);
     $route4 = new Route('/path/with/{slug}');
-    $route_collection->add('route_1', $route1);
-    $route_collection->add('route_2', $route2);
     $route_collection->add('route_3', $route3);
+    $route_collection->add('route_2', $route2);
+    $route_collection->add('route_1', $route1);
     $route_collection->add('route_4', $route4);
 
     $page_variant1 = $this->prophesize(PageVariantInterface::class);
@@ -286,6 +290,7 @@ class VariantRouteFilterTest extends UnitTestCase {
     $this->assertSame($expected, $result->all());
     $expected_attributes = [
       'page_manager_page_variant' => 'variant1',
+      'page_manager_page_variant_weight' => 1,
       '_route_object' => $route2,
       '_route' => 'route_2',
     ];
