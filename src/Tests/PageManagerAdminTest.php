@@ -181,6 +181,10 @@ class PageManagerAdminTest extends WebTestBase {
     $this->clickLink('Edit');
     // Add a block to the variant.
     $this->clickLink('Add new block');
+
+    // Assert that the broken/missing block is not visible.
+    $this->assertNoText('Broken/Missing');
+
     $this->clickLink('User account menu');
     $edit = [
       'region' => 'top',

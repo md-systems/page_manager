@@ -231,6 +231,7 @@ class VariantRouteFilterTest extends UnitTestCase {
     $route_collection = new RouteCollection();
     $request = new Request();
 
+    // Add route2 first to ensure that the routes are sorted by weight.
     $route1 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_1', 'page_manager_page_variant_weight' => 1]);
     $route2 = new Route('/path/with/{slug}', ['page_manager_page_variant' => 'variant_2', 'page_manager_page_variant_weight' => 2]);
     $route_collection->add('route_2', $route2);
@@ -259,6 +260,7 @@ class VariantRouteFilterTest extends UnitTestCase {
 
   /**
    * @covers ::filter
+   * @covers ::routeWeightSort
    *
    * Tests when the first page_manager route is allowed, but other
    * non-page_manager routes are also present.

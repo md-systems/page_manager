@@ -79,12 +79,12 @@ class VariantRouteFilter implements RouteFilterInterface {
     // Store the unaltered request attributes.
     $original_attributes = $request->attributes->all();
 
-    // First get all routes and sort them by variant weight.
+    // First get all routes and sort them by variant weight. Note that routes
+    // without a weight will have an undefined order, they are ignored here.
     $routes = $collection->all();
     uasort($routes, [$this, 'routeWeightSort']);
 
     // Find the first route that is accessible.
-    $acccessible_route = NULL;
     foreach ($routes as $name => $route) {
       $attributes = $this->getRequestAttributes($route, $name, $request);
       // Add the enhanced attributes to the request.
@@ -93,7 +93,7 @@ class VariantRouteFilter implements RouteFilterInterface {
         if ($this->checkPageVariantAccess($page_variant_id)) {
           // Access granted, use this route. Do not restore request attributes
           // but keep those from this route by breaking out.
-          $acccessible_route = $route;
+          $accessible_route_name = $name;
           break;
         }
       }
@@ -104,9 +104,11 @@ class VariantRouteFilter implements RouteFilterInterface {
       $request->attributes->replace($original_attributes);
     }
 
+    // Because the sort order of $routes is unreliable for a route without a
+    // variant weight, rely on the original order of $collection here.
     foreach ($collection as $name => $route) {
       if ($route->getDefault('page_manager_page_variant')) {
-        if ($acccessible_route !== $route) {
+        if ($accessible_route_name !== $name) {
           // Remove all other page manager routes.
           $collection->remove($name);
         }
@@ -124,7 +126,7 @@ class VariantRouteFilter implements RouteFilterInterface {
   /**
    * Sort callback for routes based on the variant weight.
    */
-  public function routeWeightSort($a, $b) {
+  protected function routeWeightSort(Route $a, Route $b) {
     $a_weight = $a->getDefault('page_manager_page_variant_weight');
     $b_weight = $b->getDefault('page_manager_page_variant_weight');
     if ($a_weight === $b_weight) {

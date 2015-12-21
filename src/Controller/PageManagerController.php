@@ -288,6 +288,8 @@ class PageManagerController extends ControllerBase {
       ],
     ];
     $available_plugins = $this->blockManager->getDefinitionsForContexts($page_variant->getContexts());
+    // Order by category, and then by admin label.
+    $available_plugins = $this->blockManager->getSortedDefinitions($available_plugins);
     foreach ($available_plugins as $plugin_id => $plugin_definition) {
       // Make a section for each region.
       $category = $plugin_definition['category'];
