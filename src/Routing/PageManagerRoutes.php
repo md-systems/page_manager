@@ -18,8 +18,6 @@ use Symfony\Component\Routing\RouteCollection;
 
 /**
  * Provides routes for page entities.
- *
- * @see \Drupal\page_manager\Entity\PageViewBuilder
  */
 class PageManagerRoutes extends RouteSubscriberBase {
 
