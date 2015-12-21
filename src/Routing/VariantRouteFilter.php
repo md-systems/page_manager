@@ -85,6 +85,7 @@ class VariantRouteFilter implements RouteFilterInterface {
     uasort($routes, [$this, 'routeWeightSort']);
 
     // Find the first route that is accessible.
+    $accessible_route_name = NULL;
     foreach ($routes as $name => $route) {
       $attributes = $this->getRequestAttributes($route, $name, $request);
       // Add the enhanced attributes to the request.
