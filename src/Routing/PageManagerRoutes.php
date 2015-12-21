@@ -73,8 +73,6 @@ class PageManagerRoutes extends RouteSubscriberBase {
       ];
       $requirements = [];
 
-      $arguments = [];
-
       if ($route_name = $this->findPageRouteName($entity, $collection)) {
         $this->cacheTagsInvalidator->invalidateTags(["page_manager_route_name:$route_name"]);
 
@@ -100,7 +98,6 @@ class PageManagerRoutes extends RouteSubscriberBase {
           if (preg_match('/%(([\w_]+)\.)?([\w_]+)/', $bit, $matches)) {
             list($bit, $argdot, $arg, $type) = $matches;
             $arg = $arg ?: 'arg_' . $arg_counter++;
-            $arguments[$arg] = NULL;
             $bits[$pos] = '{' . $arg . '}';
             $parameters[$arg] = [
               'type' => $type,
@@ -127,7 +124,7 @@ class PageManagerRoutes extends RouteSubscriberBase {
             // route name. In order to convey the base route name for this set
             // of variants, add it as a parameter.
             'base_route_name' => $route_name,
-          ] + $arguments,
+          ],
           $requirements,
           [
             'parameters' => $parameters,
