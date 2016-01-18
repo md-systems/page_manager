@@ -85,28 +85,28 @@ page_manager.access_condition_delete:
 #### Static Contexts
 
 page_manager.static_context_add:
-  path: '/admin/structure/page_manager/manage/{page}/context/add'
+  path: '/admin/structure/page_manager/manage/{page}/variant/{page_variant}/context/add'
   defaults:
     _form: '\Drupal\page_manager\Form\StaticContextAddForm'
     _title: 'Add new static context'
   requirements:
-    _entity_access: page.update
+    _entity_access: page_variant.update
 
 page_manager.static_context_edit:
-  path: '/admin/structure/page_manager/manage/{page}/context/edit/{name}'
+  path: '/admin/structure/page_manager/manage/{page}/variant/{page_variant}/context/edit/{name}'
   defaults:
     _form: '\Drupal\page_manager\Form\StaticContextEditForm'
     _title_callback: '\Drupal\page_manager\Controller\PageManagerController::editStaticContextTitle'
   requirements:
-    _entity_access: page.update
+    _entity_access: page_variant.update
 
 page_manager.static_context_delete:
-  path: '/admin/structure/page_manager/manage/{page}/context/delete/{name}'
+  path: '/admin/structure/page_manager/manage/{page}/variant/{page_variant}/context/delete/{name}'
   defaults:
     _form: '\Drupal\page_manager\Form\StaticContextDeleteForm'
     _title: 'Delete static context'
   requirements:
-    _entity_access: page.update
+    _entity_access: page_variant.update
 
 #### Variants
 

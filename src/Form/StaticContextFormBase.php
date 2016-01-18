@@ -13,7 +13,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeRepositoryInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -22,11 +22,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 abstract class StaticContextFormBase extends FormBase {
 
   /**
-   * The page entity this static context belongs to.
+   * The page variant entity this static context belongs to.
    *
-   * @var \Drupal\page_manager\PageInterface
+   * @var \Drupal\page_manager\PageVariantInterface
    */
-  protected $page;
+  protected $pageVariant;
 
   /**
    * The static context configuration.
@@ -102,9 +102,9 @@ abstract class StaticContextFormBase extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, PageInterface $page = NULL, $name = '') {
-    $this->page = $page;
-    $this->staticContext = $this->page->getStaticContext($name);
+  public function buildForm(array $form, FormStateInterface $form_state, PageVariantInterface $page_variant = NULL, $name = '') {
+    $this->pageVariant = $page_variant;
+    $this->staticContext = $this->pageVariant->getStaticContext($name);
 
     // Allow the condition to add to the form.
     $form['label'] = [
@@ -190,13 +190,13 @@ abstract class StaticContextFormBase extends FormBase {
       'type' => 'entity:' . $entity_type,
       'value' => $entity->uuid(),
     ];
-    $this->page->setStaticContext($form_state->getValue('machine_name'), $this->staticContext);
-    $this->page->save();
+    $this->pageVariant->setStaticContext($form_state->getValue('machine_name'), $this->staticContext);
+    $this->pageVariant->save();
 
     // Set the submission message.
     drupal_set_message($this->submitMessageText());
 
-    $form_state->setRedirectUrl($this->page->toUrl('edit-form'));
+    $form_state->setRedirectUrl($this->pageVariant->toUrl('edit-form'));
   }
 
   /**
@@ -227,7 +227,7 @@ abstract class StaticContextFormBase extends FormBase {
    *   TRUE if the format exists, FALSE otherwise.
    */
   public function contextExists($name) {
-    return isset($this->page->getContexts()[$name]);
+    return isset($this->pageVariant->getContexts()[$name]);
   }
 
   /**

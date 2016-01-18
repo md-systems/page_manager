@@ -59,8 +59,8 @@ class RouteParamContext implements EventSubscriberInterface {
    */
   public function onPageContext(PageManagerContextEvent $event) {
     $request = $this->requestStack->getCurrentRequest();
-    $executable = $event->getPageExecutable();
-    $routes = $this->routeProvider->getRoutesByPattern($executable->getPage()->getPath())->all();
+    $page = $event->getPage();
+    $routes = $this->routeProvider->getRoutesByPattern($page->getPath())->all();
 
     if (empty($routes)) {
       drupal_set_message($this->t('The route for this page might not yet have been built. Try refreshing the page to ensure any route parameter context is included in the list.'), 'warning');
@@ -90,7 +90,7 @@ class RouteParamContext implements EventSubscriberInterface {
         $context = new Context(new ContextDefinition($route_context['type'], $context_name, FALSE), $value);
         $context->addCacheableDependency($cacheability);
 
-        $executable->addContext($route_context_name, $context);
+        $page->addContext($route_context_name, $context);
       }
     }
   }

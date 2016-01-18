@@ -12,7 +12,6 @@ use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\TypedData\TypedDataInterface;
 use Drupal\page_manager\EventSubscriber\RouteParamContext;
-use Drupal\page_manager\PageInterface;
 use Prophecy\Argument;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -54,18 +53,11 @@ class RouteParamContextTest extends PageContextTestBase {
         return $data_definition;
       });
 
-    $page = $this->prophesize(PageInterface::class);
-    $this->executable->expects($this->once())
-      ->method('getPage')
-      ->will($this->returnValue($page->reveal()));
-    $page->getPath()->willReturn('/test_route');
+    $this->page->getPath()->willReturn('/test_route');
 
-    $this->executable->expects($this->at(1))
-      ->method('addContext')
-      ->with('foo', $this->isInstanceOf(Context::class));
-    $this->executable->expects($this->at(2))
-      ->method('addContext')
-      ->with('baz', $this->isInstanceOf(Context::class));
+    $this->page->addContext('foo', Argument::type(Context::class))->shouldBeCalled();
+    $this->page->addContext('baz', Argument::type(Context::class))->shouldBeCalled();
+    $this->page->addContext('page', Argument::type(Context::class))->shouldBeCalled();
 
     $collection->add('test_route', new Route('/test_route', [], [], [
       'parameters' => [
@@ -94,14 +86,9 @@ class RouteParamContextTest extends PageContextTestBase {
     $request_stack = new RequestStack();
     $request_stack->push($request);
 
-    $page = $this->prophesize(PageInterface::class);
-    $this->executable->expects($this->once())
-      ->method('getPage')
-      ->will($this->returnValue($page->reveal()));
-    $page->getPath()->willReturn('/test_route');
+    $this->page->getPath()->willReturn('/test_route');
 
-    $this->executable->expects($this->never())
-      ->method('addContext');
+    $this->page->addContext(Argument::cetera())->shouldNotBeCalled();
 
     // Set up a request with one of the expected parameters as an attribute.
     $request->attributes->add(['foo' => 'banana']);

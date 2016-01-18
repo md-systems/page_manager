@@ -7,6 +7,7 @@
 
 namespace Drupal\page_manager;
 
+use Drupal\Component\Plugin\Context\ContextInterface;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
 
@@ -22,13 +23,6 @@ interface PageInterface extends ConfigEntityInterface, EntityWithPluginCollectio
    *   Whether the page entity is enabled or not.
    */
   public function status();
-
-  /**
-   * Returns the executable instance for this page.
-   *
-   * @return \Drupal\page_manager\PageExecutableInterface
-   */
-  public function getExecutable();
 
   /**
    * Returns the path for the page entity.
@@ -134,52 +128,23 @@ interface PageInterface extends ConfigEntityInterface, EntityWithPluginCollectio
   public function getAccessLogic();
 
   /**
-   * Returns the static context configurations for this page entity.
-   *
-   * @return array[]
-   *   An array of static context configurations.
-   */
-  public function getStaticContexts();
-
-  /**
-   * Retrieves a specific static context.
-   *
-   * @param string $name
-   *   The static context unique name.
-   *
-   * @return array
-   *   The configuration array of the static context
-   */
-  public function getStaticContext($name);
-
-  /**
-   * Adds/updates a given static context.
-   *
-   * @param string $name
-   *   The static context unique machine name.
-   * @param array $configuration
-   *   A new array of configuration for the static context.
-   *
-   * @return $this
-   */
-  public function setStaticContext($name, $configuration);
-
-  /**
-   * Removes a specific static context.
-   *
-   * @param string $name
-   *   The static context unique name.
-   *
-   * @return $this
-   */
-  public function removeStaticContext($name);
-
-  /**
    * Gets the values for all defined contexts.
    *
    * @return \Drupal\Component\Plugin\Context\ContextInterface[]
    *   An array of set context values, keyed by context name.
    */
   public function getContexts();
+
+  /**
+   * Sets the context for a given name.
+   *
+   * @param string $name
+   *   The name of the context.
+   * @param \Drupal\Component\Plugin\Context\ContextInterface $value
+   *   The context to add.
+   *
+   * @return $this
+   */
+  public function addContext($name, ContextInterface $value);
 
 }

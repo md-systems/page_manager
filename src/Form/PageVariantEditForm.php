@@ -38,6 +38,8 @@ class PageVariantEditForm extends PageVariantFormBase {
 
     $form['selection_section'] = $this->buildSelectionForm();
 
+    $form['context'] = $this->buildContextForm();
+
     return $form;
   }
 
@@ -288,6 +290,96 @@ class PageVariantEditForm extends PageVariantFormBase {
     }
 
     return $form;
+  }
+
+  /**
+   * Builds the context form for a variant.
+   *
+   * @return array
+   */
+  protected function buildContextForm() {
+    /** @var \Drupal\page_manager\PageVariantInterface $page_variant */
+    $page_variant = $this->getEntity();
+
+    // Set up the attributes used by a modal to prevent duplication later.
+    $attributes = $this->getAjaxAttributes();
+    $add_button_attributes = $this->getAjaxButtonAttributes();
+
+    $form = [
+      '#type' => 'details',
+      '#title' => $this->t('Available context'),
+      '#open' => TRUE,
+    ];
+    $form['add'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Add new static context'),
+      '#url' => Url::fromRoute('page_manager.static_context_add', [
+        'page' => $page_variant->get('page'),
+        'page_variant' => $page_variant->id(),
+      ]),
+      '#attributes' => $add_button_attributes,
+      '#attached' => [
+        'library' => [
+          'core/drupal.ajax',
+        ],
+      ],
+    ];
+    $form['available_context'] = [
+      '#type' => 'table',
+      '#header' => [
+        $this->t('Label'),
+        $this->t('Name'),
+        $this->t('Type'),
+        $this->t('Operations'),
+      ],
+      '#empty' => $this->t('There is no available context.'),
+    ];
+    $contexts = $page_variant->getContexts();
+    foreach ($contexts as $name => $context) {
+      $context_definition = $context->getContextDefinition();
+
+      $row = [];
+      $row['label'] = [
+        '#markup' => $context_definition->getLabel(),
+      ];
+      $row['machine_name'] = [
+        '#markup' => $name,
+      ];
+      $row['type'] = [
+        '#markup' => $context_definition->getDataType(),
+      ];
+
+      // Add operation links if the context is a static context.
+      $operations = [];
+      if ($page_variant->getStaticContext($name)) {
+        $operations['edit'] = [
+          'title' => $this->t('Edit'),
+          'url' => Url::fromRoute('page_manager.static_context_edit', [
+            'page' => $page_variant->get('page'),
+            'page_variant' => $page_variant->id(),
+            'name' => $name,
+          ]),
+          'attributes' => $attributes,
+        ];
+        $operations['delete'] = [
+          'title' => $this->t('Delete'),
+          'url' => Url::fromRoute('page_manager.static_context_delete', [
+            'page' => $page_variant->get('page'),
+            'page_variant' => $page_variant->id(),
+            'name' => $name,
+          ]),
+          'attributes' => $attributes,
+        ];
+      }
+      $row['operations'] = [
+        '#type' => 'operations',
+        '#links' => $operations,
+      ];
+
+      $form['available_context'][$name] = $row;
+    }
+    return $form;
+
   }
 
   /**

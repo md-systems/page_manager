@@ -75,7 +75,7 @@ class PageAccess extends EntityAccessControlHandler implements EntityHandlerInte
       }
 
       $conditions = $entity->getAccessConditions();
-      $contexts = $entity->getExecutable()->getContexts();
+      $contexts = $entity->getContexts();
       foreach ($conditions as $condition) {
         if ($condition instanceof ContextAwarePluginInterface) {
           $this->contextHandler()->applyContextMapping($condition, $contexts);

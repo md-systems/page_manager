@@ -156,6 +156,8 @@ class PageManagerAdminTest extends WebTestBase {
 
     // Add a new variant.
     $this->clickLink('Add new variant');
+    $this->assertNoText('Page with blocks');
+    $this->assertNoText('Simple page');
     $this->clickLink('Block page');
     $edit = [
       'label' => 'First',
@@ -511,8 +513,8 @@ class PageManagerAdminTest extends WebTestBase {
    *   The theme name.
    */
   protected function assertTheme($theme_name) {
-    $url = Url::fromUri('base:core/themes/' . $theme_name . '/logo.svg', ['absolute' => TRUE])->toString();
-    $elements = $this->xpath('//img[@src=:url]', [':url' => $url]);
+    $url = Url::fromUri('base:core/themes/' . $theme_name . '/logo.svg')->toString();
+    $elements = $this->xpath('//img[contains(@src, :url)]', [':url' => $url]);
     $this->assertEqual(count($elements), 1, new FormattableMarkup('Page is rendered in @theme', ['@theme' => $theme_name]));
   }
 

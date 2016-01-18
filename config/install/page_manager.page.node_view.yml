@@ -7,4 +7,3 @@ use_admin_theme: false
 path: '/node/{node}'
 access_logic: and
 access_conditions: {  }
-static_context: {  }

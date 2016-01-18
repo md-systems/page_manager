@@ -8,7 +8,7 @@
 namespace Drupal\page_manager\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\page_manager\PageInterface;
+use Drupal\page_manager\PageVariantInterface;
 
 /**
  * Provides a form for adding a new static context.
@@ -39,8 +39,8 @@ class StaticContextEditForm extends StaticContextFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, PageInterface $page = NULL, $name = '') {
-    $form = parent::buildForm($form, $form_state, $page, $name);
+  public function buildForm(array $form, FormStateInterface $form_state, PageVariantInterface $page_variant = NULL, $name = '') {
+    $form = parent::buildForm($form, $form_state, $page_variant, $name);
     // The machine name of an existing context is read-only.
     $form['machine_name'] = array(
       '#type' => 'value',

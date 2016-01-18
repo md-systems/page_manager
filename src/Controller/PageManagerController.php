@@ -145,16 +145,16 @@ class PageManagerController extends ControllerBase {
   /**
    * Route title callback.
    *
-   * @param \Drupal\page_manager\PageInterface $page
-   *   The page entity.
+   * @param \Drupal\page_manager\PageVariantInterface $page_variant
+   *   The page variant entity.
    * @param string $name
    *   The static context name.
    *
    * @return string
    *   The title for the static context edit form.
    */
-  public function editStaticContextTitle(PageInterface $page, $name) {
-    $static_context = $page->getStaticContext($name);
+  public function editStaticContextTitle(PageVariantInterface $page_variant, $name) {
+    $static_context = $page_variant->getStaticContext($name);
     return $this->t('Edit @label static context', ['@label' => $static_context['label']]);
   }
 
@@ -197,6 +197,14 @@ class PageManagerController extends ControllerBase {
       '#links' => [],
     ];
     foreach ($this->variantManager->getDefinitions() as $variant_plugin_id => $variant_plugin) {
+      // The following two variants are provided by Drupal Core. They are not
+      // configurable and therefore not compatible with Page Manager but have
+      // similar and confusing labels. Skip them so that they are not shown in
+      // the UI.
+      if (in_array($variant_plugin_id, ['simple_page', 'block_page'])) {
+        continue;
+      }
+
       $build['#links'][$variant_plugin_id] = [
         'title' => $variant_plugin['admin_label'],
         'url' => Url::fromRoute('entity.page_variant.add_form', [
